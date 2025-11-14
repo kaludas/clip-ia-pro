@@ -1,75 +1,77 @@
 import { Button } from "@/components/ui/button";
 import { Check, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const plans = [
-  {
-    name: "Gratuit",
-    price: "0€",
-    description: "Parfait pour découvrir l'IA",
-    features: [
-      "5 clips par mois",
-      "Détection IA d'événements",
-      "Format vertical 9:16",
-      "Sous-titres dynamiques",
-      "Export HD avec filigrane",
-      "Communauté Discord"
-    ],
-    cta: "Commencer gratuitement",
-    variant: "glass" as const
-  },
-  {
-    name: "Pro",
-    price: "29€",
-    period: "/mois",
-    description: "Pour les créateurs sérieux",
-    features: [
-      "Clips illimités",
-      "Ciblage par mots-clés",
-      "Traduction multilingue",
-      "Styles de sous-titres avancés",
-      "Export 4K sans filigrane",
-      "Logo/Branding personnalisé",
-      "Support prioritaire"
-    ],
-    cta: "Essayer Pro",
-    variant: "hero" as const,
-    popular: true
-  },
-  {
-    name: "Agence",
-    price: "99€",
-    period: "/mois",
-    description: "Pour les équipes et agences",
-    features: [
-      "Tout de Pro +",
-      "5 comptes utilisateurs",
-      "Recadrage multi-sources",
-      "API privée",
-      "Formation personnalisée",
-      "Gestionnaire de compte dédié"
-    ],
-    cta: "Contacter les ventes",
-    variant: "glass" as const
-  }
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Pricing = () => {
+  const { t } = useLanguage();
+  
+  const plans = [
+    {
+      name: t("pricing.free.name"),
+      price: "0€",
+      description: t("pricing.free.desc"),
+      features: [
+        t("pricing.free.f1"),
+        t("pricing.free.f2"),
+        t("pricing.free.f3"),
+        t("pricing.free.f4"),
+        t("pricing.free.f5"),
+        t("pricing.free.f6")
+      ],
+      cta: t("pricing.free.cta"),
+      variant: "glass" as const
+    },
+    {
+      name: t("pricing.pro.name"),
+      price: "29€",
+      period: "/mois",
+      description: t("pricing.pro.desc"),
+      features: [
+        t("pricing.pro.f1"),
+        t("pricing.pro.f2"),
+        t("pricing.pro.f3"),
+        t("pricing.pro.f4"),
+        t("pricing.pro.f5"),
+        t("pricing.pro.f6"),
+        t("pricing.pro.f7")
+      ],
+      cta: t("pricing.pro.cta"),
+      variant: "hero" as const,
+      popular: true
+    },
+    {
+      name: t("pricing.agency.name"),
+      price: "99€",
+      period: "/mois",
+      description: t("pricing.agency.desc"),
+      features: [
+        t("pricing.agency.f1"),
+        t("pricing.agency.f2"),
+        t("pricing.agency.f3"),
+        t("pricing.agency.f4"),
+        t("pricing.agency.f5"),
+        t("pricing.agency.f6")
+      ],
+      cta: t("pricing.agency.cta"),
+      variant: "glass" as const
+    }
+  ];
+
   return (
     <section className="py-32 relative overflow-hidden" id="tarifs">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-20">
           <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full mb-6">
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm text-muted-foreground">Tarifs transparents</span>
+            <span className="text-sm text-muted-foreground">{t("pricing.badge")}</span>
           </div>
           <h2 className="text-4xl md:text-6xl font-bold mb-6">
-            Choisissez votre{" "}
-            <span className="text-gradient">plan</span>
+            {t("pricing.title")}{" "}
+            <span className="text-gradient">{t("pricing.title2")}</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Commencez gratuitement et évoluez selon vos besoins. 
-            Aucun engagement, annulez à tout moment.
+            {t("pricing.description")}
           </p>
         </div>
         
@@ -83,7 +85,7 @@ const Pricing = () => {
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-primary to-accent rounded-full text-sm font-semibold">
-                  Plus populaire
+                  {t("pricing.popular")}
                 </div>
               )}
               

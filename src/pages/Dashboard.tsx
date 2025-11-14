@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload, Link as LinkIcon, Sparkles, Video, Clock } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import Navigation from "@/components/Navigation";
 
 const Dashboard = () => {
+  const { t, language } = useLanguage();
   const [isDragging, setIsDragging] = useState(false);
 
   return (
@@ -14,11 +16,11 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto">
           <div className="mb-12">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Bienvenue sur{" "}
+              {t("dashboard.welcome")}{" "}
               <span className="text-gradient">monshort.com</span>
             </h1>
             <p className="text-xl text-muted-foreground">
-              Téléchargez votre vidéo ou collez une URL pour commencer
+              {t("dashboard.subtitle")}
             </p>
           </div>
           
@@ -44,16 +46,16 @@ const Dashboard = () => {
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-6 animate-glow">
                   <Upload className="w-8 h-8 text-background" />
                 </div>
-                <h3 className="text-xl font-bold mb-2">Télécharger un fichier</h3>
+                <h3 className="text-xl font-bold mb-2">{t("dashboard.upload.title")}</h3>
                 <p className="text-muted-foreground mb-6">
-                  Glissez-déposez votre vidéo ou cliquez pour parcourir
+                  {t("dashboard.upload.desc")}
                 </p>
                 <Button variant="glass" className="gap-2">
                   <Upload className="w-4 h-4" />
-                  Parcourir les fichiers
+                  {t("dashboard.upload.button")}
                 </Button>
                 <p className="text-sm text-muted-foreground mt-4">
-                  MP4, MOV, AVI • Max 2GB
+                  {t("dashboard.upload.format")}
                 </p>
               </div>
             </div>
@@ -64,19 +66,19 @@ const Dashboard = () => {
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-primary flex items-center justify-center mx-auto mb-6 animate-glow">
                   <LinkIcon className="w-8 h-8 text-background" />
                 </div>
-                <h3 className="text-xl font-bold mb-2">Importer depuis une URL</h3>
+                <h3 className="text-xl font-bold mb-2">{t("dashboard.url.title")}</h3>
                 <p className="text-muted-foreground mb-6">
-                  Collez un lien Twitch VOD ou YouTube
+                  {t("dashboard.url.desc")}
                 </p>
                 <div className="space-y-3">
                   <input
                     type="text"
-                    placeholder="https://twitch.tv/videos/..."
+                    placeholder={t("dashboard.url.placeholder")}
                     className="w-full px-4 py-3 glass rounded-xl border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                   <Button variant="hero" className="w-full gap-2">
                     <Sparkles className="w-4 h-4" />
-                    Analyser avec l'IA
+                    {t("dashboard.url.button")}
                   </Button>
                 </div>
               </div>
@@ -86,9 +88,9 @@ const Dashboard = () => {
           {/* Recent Clips */}
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Clips récents</h2>
+              <h2 className="text-2xl font-bold">{t("dashboard.recent")}</h2>
               <Button variant="ghost" size="sm">
-                Voir tout
+                {t("dashboard.viewAll")}
               </Button>
             </div>
             
@@ -99,10 +101,10 @@ const Dashboard = () => {
                     <Video className="w-12 h-12 text-muted-foreground" />
                   </div>
                   <div className="p-4">
-                    <h3 className="font-semibold mb-2">Clip sans titre #{i}</h3>
+                    <h3 className="font-semibold mb-2">{t("dashboard.untitled")} #{i}</h3>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="w-4 h-4" />
-                      Il y a {i} jour{i > 1 ? 's' : ''}
+                      {language === "en" ? "" : t("dashboard.ago")} {i} {i > 1 ? t("dashboard.days") : t("dashboard.day")}
                     </div>
                   </div>
                 </div>
