@@ -15,7 +15,7 @@ const Dashboard = () => {
           <div className="mb-12">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Bienvenue sur{" "}
-              <span className="text-gradient">Clip'IA</span>
+              <span className="text-gradient">monshort.com</span>
             </h1>
             <p className="text-xl text-muted-foreground">
               Téléchargez votre vidéo ou collez une URL pour commencer

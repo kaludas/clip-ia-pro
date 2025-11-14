@@ -10,19 +10,19 @@ const Navigation = () => {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center animate-glow">
             <Video className="w-6 h-6 text-background" />
           </div>
-          <span className="text-xl font-bold text-gradient">Clip'IA</span>
+          <span className="text-xl font-bold text-gradient">monshort.com</span>
         </Link>
         
         <div className="hidden md:flex items-center gap-8">
-          <Link to="/" className="text-foreground/80 hover:text-foreground transition-colors">
+          <a href="#accueil" className="text-foreground/80 hover:text-foreground transition-colors">
             Accueil
-          </Link>
-          <Link to="/features" className="text-foreground/80 hover:text-foreground transition-colors">
+          </a>
+          <a href="#fonctionnalites" className="text-foreground/80 hover:text-foreground transition-colors">
             Fonctionnalités
-          </Link>
-          <Link to="/pricing" className="text-foreground/80 hover:text-foreground transition-colors">
+          </a>
+          <a href="#tarifs" className="text-foreground/80 hover:text-foreground transition-colors">
             Tarifs
-          </Link>
+          </a>
         </div>
         
         <div className="flex items-center gap-3">
