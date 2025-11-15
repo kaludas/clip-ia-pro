@@ -34,7 +34,8 @@ const Pricing = () => {
         t("pricing.pro.f4"),
         t("pricing.pro.f5"),
         t("pricing.pro.f6"),
-        t("pricing.pro.f7")
+        t("pricing.pro.f7"),
+        t("pricing.pro.f8")
       ],
       cta: t("pricing.pro.cta"),
       variant: "hero" as const,
@@ -51,7 +52,8 @@ const Pricing = () => {
         t("pricing.agency.f3"),
         t("pricing.agency.f4"),
         t("pricing.agency.f5"),
-        t("pricing.agency.f6")
+        t("pricing.agency.f6"),
+        t("pricing.agency.f7")
       ],
       cta: t("pricing.agency.cta"),
       variant: "glass" as const
