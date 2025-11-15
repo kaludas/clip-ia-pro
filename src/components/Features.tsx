@@ -1,4 +1,4 @@
-import { Sparkles, Languages, Crop, Subtitles, Target, Zap, Calendar } from "lucide-react";
+import { Sparkles, Languages, Crop, Subtitles, Target, Zap, Calendar, Music, Palette } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Features = () => {
@@ -48,6 +48,20 @@ const Features = () => {
       icon: Calendar,
       title: t("features.autopublish.title"),
       description: t("features.autopublish.desc"),
+      color: "from-primary to-accent",
+      premium: true
+    },
+    {
+      icon: Music,
+      title: t("features.music.title"),
+      description: t("features.music.desc"),
+      color: "from-accent to-primary",
+      premium: true
+    },
+    {
+      icon: Palette,
+      title: t("features.editor.title"),
+      description: t("features.editor.desc"),
       color: "from-primary to-accent",
       premium: true
     }
