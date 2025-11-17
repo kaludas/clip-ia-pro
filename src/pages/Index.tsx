@@ -1,7 +1,9 @@
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
+import InteractiveDemo from "@/components/InteractiveDemo";
 import Pricing from "@/components/Pricing";
+import ChatBot from "@/components/ChatBot";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index = () => {
@@ -12,7 +14,9 @@ const Index = () => {
       <Navigation />
       <Hero />
       <Features />
+      <InteractiveDemo />
       <Pricing />
+      <ChatBot />
       
       {/* Footer */}
       <footer className="border-t border-border/50 py-12">
