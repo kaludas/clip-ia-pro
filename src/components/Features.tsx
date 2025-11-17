@@ -3,7 +3,18 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const Features = () => {
   const { t } = useLanguage();
-  
+
+  // Generate random positions for floating stars
+  const generateStars = (count: number) => {
+    return Array.from({ length: count }, (_, i) => ({
+      id: i,
+      top: `${Math.random() * 100}%`,
+      left: `${Math.random() * 100}%`,
+      delay: `${Math.random() * 3}s`,
+      duration: `${3 + Math.random() * 2}s`
+    }));
+  };
+
   const features = [
     {
       icon: Sparkles,
@@ -97,8 +108,22 @@ const Features = () => {
                     {t("features.premium")}
                   </div>
                 )}
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                  <Icon className="w-7 h-7 text-background" />
+                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform relative`}>
+                  <Icon className="w-7 h-7 text-background relative z-10" />
+                  {/* Floating stars around icon */}
+                  {generateStars(6).map((star) => (
+                    <div
+                      key={star.id}
+                      className="absolute w-1 h-1 bg-primary rounded-full animate-float"
+                      style={{
+                        top: star.top,
+                        left: star.left,
+                        animationDelay: star.delay,
+                        animationDuration: star.duration,
+                        boxShadow: '0 0 6px hsl(var(--primary)), 0 0 12px hsl(var(--primary) / 0.5)'
+                      }}
+                    />
+                  ))}
                 </div>
                 <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
                 <p className="text-muted-foreground leading-relaxed">
