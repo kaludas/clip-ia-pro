@@ -54,6 +54,23 @@ const translations = {
     "features.editor.title": "Éditeur Visuel Rapide",
     "features.editor.desc": "Personnalisez vos clips en quelques clics : ajoutez des titres, appliquez des filtres, des cadres ou des barres de progression. Sans logiciel lourd, directement dans le dashboard.",
     
+    // Demo
+    "demo.badge": "Essayez-le",
+    "demo.title1": "Voyez l'IA",
+    "demo.title2": "en Action",
+    "demo.description": "Découvrez comment MonShort transforme instantanément vos vidéos en clips courts optimisés pour les réseaux sociaux.",
+    "demo.feature1": "Analyse IA",
+    "demo.feature2": "Découpage Auto",
+    "demo.feature3": "Format 9:16",
+    
+    // Chatbot
+    "chatbot.open": "Ouvrir le chat",
+    "chatbot.title": "MonAide",
+    "chatbot.subtitle": "Assistant virtuel IA",
+    "chatbot.welcome": "Bonjour ! Comment puis-je vous aider avec MonShort aujourd'hui ?",
+    "chatbot.placeholder": "Posez votre question...",
+    "chatbot.error": "Désolé, une erreur s'est produite. Veuillez réessayer.",
+    
     // Pricing
     "pricing.badge": "Tarifs transparents",
     "pricing.title": "Choisissez votre",
@@ -159,6 +176,23 @@ const translations = {
     "features.music.desc": "AI analyzes your clip's topic and suggests trending music or sounds from TikTok/Reels that match the rhythm. Automatic audio synchronization included.",
     "features.editor.title": "Quick Visual Editor",
     "features.editor.desc": "Customize your clips in seconds: add titles, apply filters, frames or progress bars. No heavy software needed, directly in your dashboard.",
+    
+    // Demo
+    "demo.badge": "Try It Live",
+    "demo.title1": "See the AI",
+    "demo.title2": "in Action",
+    "demo.description": "Discover how MonShort instantly transforms your videos into short clips optimized for social media.",
+    "demo.feature1": "AI Analysis",
+    "demo.feature2": "Auto-Cutting",
+    "demo.feature3": "9:16 Format",
+    
+    // Chatbot
+    "chatbot.open": "Open chat",
+    "chatbot.title": "MonAide",
+    "chatbot.subtitle": "AI Virtual Assistant",
+    "chatbot.welcome": "Hello! How can I help you with MonShort today?",
+    "chatbot.placeholder": "Ask your question...",
+    "chatbot.error": "Sorry, an error occurred. Please try again.",
     
     // Pricing
     "pricing.badge": "Transparent pricing",
