@@ -3,10 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Upload, Link as LinkIcon, Sparkles, Video, Clock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Navigation from "@/components/Navigation";
+import { VideoEditor } from "@/components/VideoEditor";
 
 const Dashboard = () => {
   const { t, language } = useLanguage();
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  
+  // If video is selected, show editor
+  if (selectedVideo) {
+    return <VideoEditor videoUrl={selectedVideo} />;
+  }
 
   return (
     <div className="min-h-screen">
@@ -39,7 +46,11 @@ const Dashboard = () => {
               onDrop={(e) => {
                 e.preventDefault();
                 setIsDragging(false);
-                // Handle file drop
+                const files = Array.from(e.dataTransfer.files);
+                if (files[0]) {
+                  const url = URL.createObjectURL(files[0]);
+                  setSelectedVideo(url);
+                }
               }}
             >
               <div className="text-center">
@@ -50,7 +61,23 @@ const Dashboard = () => {
                 <p className="text-muted-foreground mb-6">
                   {t("dashboard.upload.desc")}
                 </p>
-                <Button variant="glass" className="gap-2">
+                <Button 
+                  variant="glass" 
+                  className="gap-2"
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "video/*";
+                    input.onchange = (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (file) {
+                        const url = URL.createObjectURL(file);
+                        setSelectedVideo(url);
+                      }
+                    };
+                    input.click();
+                  }}
+                >
                   <Upload className="w-4 h-4" />
                   {t("dashboard.upload.button")}
                 </Button>
