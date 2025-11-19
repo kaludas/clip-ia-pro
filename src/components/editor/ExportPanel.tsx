@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Download, Copy, Check } from "lucide-react";
+import { Sparkles, Download, Copy, Check, Globe } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ExportPanelProps {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -20,6 +21,7 @@ export const ExportPanel = ({
 }: ExportPanelProps) => {
   const { t, language } = useLanguage();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [targetLanguage, setTargetLanguage] = useState<string>(language);
   const [suggestions, setSuggestions] = useState<{
     title: string;
     hashtags: string[];
@@ -47,7 +49,7 @@ export const ExportPanel = ({
         body: {
           frameData,
           duration: trimEnd - trimStart,
-          language,
+          language: targetLanguage,
         },
       });
 
@@ -78,8 +80,35 @@ export const ExportPanel = ({
   return (
     <div className="space-y-6">
       {/* AI Suggestions */}
-      <div>
-        <h4 className="text-sm font-semibold mb-3">{t("editor.aiSuggestionsTitle")}</h4>
+      <div className="space-y-3">
+        <h4 className="text-sm font-semibold">{t("editor.aiSuggestionsTitle")}</h4>
+        
+        <div className="space-y-2">
+          <label className="text-sm font-medium flex items-center gap-2">
+            <Globe className="w-4 h-4" />
+            {t("editor.targetLanguage")}
+          </label>
+          <Select value={targetLanguage} onValueChange={setTargetLanguage}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fr">🇫🇷 Français</SelectItem>
+              <SelectItem value="en">🇬🇧 English</SelectItem>
+              <SelectItem value="es">🇪🇸 Español</SelectItem>
+              <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
+              <SelectItem value="it">🇮🇹 Italiano</SelectItem>
+              <SelectItem value="pt">🇵🇹 Português</SelectItem>
+              <SelectItem value="ja">🇯🇵 日本語</SelectItem>
+              <SelectItem value="ko">🇰🇷 한국어</SelectItem>
+              <SelectItem value="zh">🇨🇳 中文</SelectItem>
+              <SelectItem value="ar">🇸🇦 العربية</SelectItem>
+              <SelectItem value="ru">🇷🇺 Русский</SelectItem>
+              <SelectItem value="hi">🇮🇳 हिन्दी</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
         <Button
           onClick={generateViralSuggestions}
           disabled={isGenerating}

@@ -179,6 +179,7 @@ const translations = {
     "editor.errorGenerating": "Erreur lors de la génération",
     "editor.suggestionsGenerated": "Suggestions générées !",
     "editor.exportStarted": "Export démarré...",
+    "editor.targetLanguage": "Langue de traduction",
   },
   en: {
     // Navigation
@@ -350,6 +351,7 @@ const translations = {
     "editor.errorGenerating": "Error generating suggestions",
     "editor.suggestionsGenerated": "Suggestions generated!",
     "editor.exportStarted": "Export started...",
+    "editor.targetLanguage": "Translation Language",
   }
 };
 
