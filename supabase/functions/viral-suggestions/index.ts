@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { frameData, duration, language } = await req.json();
+    const { frameData, duration, language = 'fr' } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -19,42 +19,44 @@ serve(async (req) => {
     }
 
     console.log(`Generating viral suggestions for ${duration}s clip in ${language}`);
+    
+    const languageInstructions: Record<string, { name: string; sampleEmojis: string }> = {
+      'fr': { name: 'French', sampleEmojis: '🔥💯🎮' },
+      'en': { name: 'English', sampleEmojis: '🔥💯🎮' },
+      'es': { name: 'Spanish', sampleEmojis: '🔥💯🎮' },
+      'de': { name: 'German', sampleEmojis: '🔥💯🎮' },
+      'it': { name: 'Italian', sampleEmojis: '🔥💯🎮' },
+      'pt': { name: 'Portuguese', sampleEmojis: '🔥💯🎮' },
+      'ja': { name: 'Japanese', sampleEmojis: '🎮✨🔥' },
+      'ko': { name: 'Korean', sampleEmojis: '🎮✨🔥' },
+      'zh': { name: 'Chinese', sampleEmojis: '🎮✨🔥' },
+      'ar': { name: 'Arabic', sampleEmojis: '🔥💯🎮' },
+      'ru': { name: 'Russian', sampleEmojis: '🔥💯🎮' },
+      'hi': { name: 'Hindi', sampleEmojis: '🔥💯🎮' }
+    };
+    
+    const langInfo = languageInstructions[language] || languageInstructions['en'];
 
-    const systemPrompt = language === "fr" 
-      ? `Tu es un expert en marketing viral sur TikTok, YouTube Shorts et Instagram Reels. 
-         Tu analyses des clips gaming/streaming et génères:
-         - Un titre accrocheur et viral (max 60 caractères)
-         - 5-8 hashtags tendance et pertinents (gaming, streaming, clips)
-         - Une description engageante (max 150 caractères)
-         
-         Ton style: dynamique, jeune, avec du punch. Utilise des émojis pertinents.
-         Focus sur l'émotion, l'action, et ce qui rend le moment unique.`
-      : `You are a viral marketing expert for TikTok, YouTube Shorts, and Instagram Reels.
-         You analyze gaming/streaming clips and generate:
-         - A catchy viral title (max 60 characters)
-         - 5-8 trending relevant hashtags (gaming, streaming, clips)
-         - An engaging description (max 150 characters)
-         
-         Your style: dynamic, young, punchy. Use relevant emojis.
-         Focus on emotion, action, and what makes the moment unique.`;
+    const systemPrompt = `You are a viral marketing expert for TikTok, YouTube Shorts, and Instagram Reels.
+       You analyze gaming/streaming clips and generate content in ${langInfo.name}.
+       Generate:
+       - A catchy viral title (max 60 characters)
+       - 5-8 trending relevant hashtags (gaming, streaming, clips)
+       - An engaging description (max 150 characters)
+       
+       Your style: dynamic, young, punchy. Use relevant emojis like ${langInfo.sampleEmojis}.
+       Focus on emotion, action, and what makes the moment unique.
+       
+       CRITICAL: ALL content (title, hashtags, description) MUST be written entirely in ${langInfo.name}.`;
 
-    const userPrompt = language === "fr"
-      ? `Analyse cette image d'un clip gaming/streaming de ${Math.round(duration)}s. 
-         Génère un titre viral, des hashtags tendance, et une description accrocheuse.
-         Retourne UNIQUEMENT un JSON valide avec cette structure:
-         {
-           "title": "titre accrocheur ici",
-           "hashtags": ["tag1", "tag2", "tag3"],
-           "description": "description engageante ici"
-         }`
-      : `Analyze this ${Math.round(duration)}s gaming/streaming clip image.
-         Generate a viral title, trending hashtags, and engaging description.
-         Return ONLY valid JSON with this structure:
-         {
-           "title": "catchy title here",
-           "hashtags": ["tag1", "tag2", "tag3"],
-           "description": "engaging description here"
-         }`;
+    const userPrompt = `Analyze this ${Math.round(duration)}s gaming/streaming clip image.
+       Generate a viral title, trending hashtags, and engaging description in ${langInfo.name}.
+       Return ONLY valid JSON with this structure:
+       {
+         "title": "catchy title here in ${langInfo.name}",
+         "hashtags": ["tag1", "tag2", "tag3"],
+         "description": "engaging description here in ${langInfo.name}"
+       }`;
 
     // Call Lovable AI with vision
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
