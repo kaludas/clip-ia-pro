@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.viral-suggestions]
 verify_jwt = false
+
+[functions.virality-score]
+verify_jwt = false
+
+[functions.generate-thumbnail]
+verify_jwt = false
