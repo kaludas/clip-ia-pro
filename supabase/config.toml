@@ -11,3 +11,12 @@ verify_jwt = false
 
 [functions.generate-thumbnail]
 verify_jwt = false
+
+[functions.detect-viral-moments]
+verify_jwt = false
+
+[functions.voice-profiling]
+verify_jwt = false
+
+[functions.product-recognition]
+verify_jwt = false
