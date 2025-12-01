@@ -7,6 +7,10 @@ import { EffectsPanel } from "./editor/EffectsPanel";
 import { TextOverlay } from "./editor/TextOverlay";
 import { ExportPanel } from "./editor/ExportPanel";
 import { ViralMomentDetector } from "./ViralMomentDetector";
+import { SpeedControl } from "./editor/SpeedControl";
+import { LayerManager } from "./editor/LayerManager";
+import { TitleTemplates } from "./editor/TitleTemplates";
+import { SchedulePanel } from "./editor/SchedulePanel";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -25,7 +29,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   const [duration, setDuration] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
-  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral">("viral");
+  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule">("viral");
   
   // Effects state
   const [brightness, setBrightness] = useState(100);
@@ -266,7 +270,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                 <Button
                   variant={activePanel === "viral" ? "hero" : "ghost"}
                   onClick={() => setActivePanel("viral")}
-                  className="flex-1 gap-2 whitespace-nowrap"
+                  className="flex-1 gap-2 whitespace-nowrap text-xs sm:text-sm"
                 >
                   <Sparkles className="w-4 h-4" />
                   {t("editor.viral")}
@@ -274,21 +278,49 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                 <Button
                   variant={activePanel === "effects" ? "hero" : "ghost"}
                   onClick={() => setActivePanel("effects")}
-                  className="flex-1 whitespace-nowrap"
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
                 >
                   {t("editor.effects")}
                 </Button>
                 <Button
                   variant={activePanel === "text" ? "hero" : "ghost"}
                   onClick={() => setActivePanel("text")}
-                  className="flex-1 whitespace-nowrap"
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
                 >
                   {t("editor.text")}
                 </Button>
                 <Button
+                  variant={activePanel === "speed" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("speed")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                >
+                  Vitesse
+                </Button>
+                <Button
+                  variant={activePanel === "layers" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("layers")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                >
+                  Calques
+                </Button>
+                <Button
+                  variant={activePanel === "templates" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("templates")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                >
+                  Titres
+                </Button>
+                <Button
+                  variant={activePanel === "schedule" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("schedule")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                >
+                  📅
+                </Button>
+                <Button
                   variant={activePanel === "export" ? "hero" : "ghost"}
                   onClick={() => setActivePanel("export")}
-                  className="flex-1 whitespace-nowrap"
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
                 >
                   {t("editor.export")}
                 </Button>
@@ -331,6 +363,43 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   }}
                 />
               )}
+              
+              {activePanel === "speed" && (
+                <SpeedControl
+                  currentTime={currentTime}
+                  duration={duration}
+                  onSpeedChange={(start, end, speed) => {
+                    console.log(`Speed change: ${start}-${end} at ${speed}x`);
+                    toast.success(t("editor.appliedEffects"));
+                  }}
+                />
+              )}
+              
+              {activePanel === "layers" && (
+                <LayerManager
+                  layers={textOverlays.map(overlay => ({
+                    id: overlay.id,
+                    type: "text" as const,
+                    name: overlay.text,
+                    visible: true,
+                    opacity: 100,
+                    zIndex: 1
+                  }))}
+                  onLayerUpdate={(layers) => {
+                    console.log("Layers updated:", layers);
+                  }}
+                />
+              )}
+              
+              {activePanel === "templates" && (
+                <TitleTemplates
+                  onApplyTemplate={(template, text) => {
+                    addTextOverlay(text, template.animation);
+                  }}
+                />
+              )}
+              
+              {activePanel === "schedule" && <SchedulePanel />}
               
               {activePanel === "export" && (
                 <ExportPanel

@@ -199,6 +199,45 @@ const translations = {
     "editor.formatHint": "Sélectionnez les formats pour lesquels exporter votre vidéo",
     "editor.exportHD": "Exporter en HD",
     "editor.export4K": "Exporter en 4K",
+    
+    // Speed Control
+    "editor.speedControl": "Contrôle de Vitesse",
+    "editor.speed": "Vitesse",
+    "editor.startTime": "Début",
+    "editor.endTime": "Fin",
+    "editor.applySpeed": "Appliquer Vitesse",
+    "editor.appliedEffects": "Effets Appliqués",
+    
+    // Layer Manager
+    "editor.layers": "Calques",
+    "editor.noLayers": "Aucun calque ajouté",
+    "editor.opacity": "Opacité",
+    
+    // Title Templates
+    "editor.titleTemplates": "Modèles de Titre",
+    "editor.titleText": "Texte du Titre",
+    "editor.enterTitle": "Entrez votre titre...",
+    "editor.selectTemplateAndText": "Sélectionnez un modèle et entrez du texte",
+    "editor.templateApplied": "Modèle appliqué !",
+    "editor.templateDetails": "Détails du Modèle",
+    "editor.animation": "Animation",
+    "editor.fontSize": "Taille Police",
+    "editor.color": "Couleur",
+    
+    // Schedule Panel
+    "editor.schedulePublication": "Planifier la Publication",
+    "editor.scheduleDescription": "Planifiez vos clips pour une publication automatique sur vos réseaux sociaux",
+    "editor.selectPlatforms": "Sélectionner les Plateformes",
+    "editor.optimalTime": "Heure Optimale",
+    "editor.selectDate": "Date",
+    "editor.pickDate": "Choisir une date",
+    "editor.selectTime": "Heure",
+    "editor.schedulePost": "Planifier",
+    "editor.selectDateAndPlatform": "Sélectionnez une date et au moins une plateforme",
+    "editor.postScheduled": "Publication planifiée !",
+    "editor.scheduledPosts": "Publications Planifiées",
+    "editor.proTip": "Conseil Pro",
+    "editor.scheduleTip": "Publiez aux heures de pointe pour maximiser votre portée. L'IA suggère les meilleurs créneaux.",
   },
   en: {
     // Navigation
@@ -390,6 +429,45 @@ const translations = {
     "editor.formatHint": "Select formats to export your video",
     "editor.exportHD": "Export in HD",
     "editor.export4K": "Export in 4K",
+    
+    // Speed Control
+    "editor.speedControl": "Speed Control",
+    "editor.speed": "Speed",
+    "editor.startTime": "Start",
+    "editor.endTime": "End",
+    "editor.applySpeed": "Apply Speed",
+    "editor.appliedEffects": "Applied Effects",
+    
+    // Layer Manager
+    "editor.layers": "Layers",
+    "editor.noLayers": "No layers added",
+    "editor.opacity": "Opacity",
+    
+    // Title Templates
+    "editor.titleTemplates": "Title Templates",
+    "editor.titleText": "Title Text",
+    "editor.enterTitle": "Enter your title...",
+    "editor.selectTemplateAndText": "Select a template and enter text",
+    "editor.templateApplied": "Template applied!",
+    "editor.templateDetails": "Template Details",
+    "editor.animation": "Animation",
+    "editor.fontSize": "Font Size",
+    "editor.color": "Color",
+    
+    // Schedule Panel
+    "editor.schedulePublication": "Schedule Publication",
+    "editor.scheduleDescription": "Schedule your clips for automatic publishing on your social networks",
+    "editor.selectPlatforms": "Select Platforms",
+    "editor.optimalTime": "Optimal Time",
+    "editor.selectDate": "Date",
+    "editor.pickDate": "Pick a date",
+    "editor.selectTime": "Time",
+    "editor.schedulePost": "Schedule",
+    "editor.selectDateAndPlatform": "Select a date and at least one platform",
+    "editor.postScheduled": "Post scheduled!",
+    "editor.scheduledPosts": "Scheduled Posts",
+    "editor.proTip": "Pro Tip",
+    "editor.scheduleTip": "Post at peak times to maximize your reach. AI suggests the best slots.",
   }
 };
 

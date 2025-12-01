@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.product-recognition]
 verify_jwt = false
+
+[functions.audio-processor]
+verify_jwt = false
