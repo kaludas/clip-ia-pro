@@ -6,6 +6,7 @@ import { Timeline } from "./editor/Timeline";
 import { EffectsPanel } from "./editor/EffectsPanel";
 import { TextOverlay } from "./editor/TextOverlay";
 import { ExportPanel } from "./editor/ExportPanel";
+import { ViralMomentDetector } from "./ViralMomentDetector";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -24,7 +25,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   const [duration, setDuration] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
-  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export">("effects");
+  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral">("viral");
   
   // Effects state
   const [brightness, setBrightness] = useState(100);
@@ -179,6 +180,15 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     toast.success(t("editor.textAdded"));
   };
 
+  const handleMomentSelect = (start: number, end: number) => {
+    setTrimStart(start);
+    setTrimEnd(end);
+    if (videoRef.current) {
+      videoRef.current.currentTime = start;
+    }
+    setActivePanel("effects");
+  };
+
   return (
     <div className="min-h-screen pt-20 pb-10 px-6">
       <div className="max-w-7xl mx-auto">
@@ -252,32 +262,46 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
           <div className="lg:col-span-2">
             <div className="glass p-6 rounded-3xl">
               {/* Panel Tabs */}
-              <div className="flex gap-2 mb-6 p-1 glass rounded-2xl">
+              <div className="flex gap-2 mb-6 p-1 glass rounded-2xl overflow-x-auto">
+                <Button
+                  variant={activePanel === "viral" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("viral")}
+                  className="flex-1 gap-2 whitespace-nowrap"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {t("editor.viral")}
+                </Button>
                 <Button
                   variant={activePanel === "effects" ? "hero" : "ghost"}
                   onClick={() => setActivePanel("effects")}
-                  className="flex-1"
+                  className="flex-1 whitespace-nowrap"
                 >
                   {t("editor.effects")}
                 </Button>
                 <Button
                   variant={activePanel === "text" ? "hero" : "ghost"}
                   onClick={() => setActivePanel("text")}
-                  className="flex-1"
+                  className="flex-1 whitespace-nowrap"
                 >
                   {t("editor.text")}
                 </Button>
                 <Button
                   variant={activePanel === "export" ? "hero" : "ghost"}
                   onClick={() => setActivePanel("export")}
-                  className="flex-1 gap-2"
+                  className="flex-1 whitespace-nowrap"
                 >
-                  <Sparkles className="w-4 h-4" />
                   {t("editor.export")}
                 </Button>
               </div>
 
               {/* Panel Content */}
+              {activePanel === "viral" && (
+                <ViralMomentDetector 
+                  videoRef={videoRef}
+                  onMomentSelect={handleMomentSelect}
+                />
+              )}
+              
               {activePanel === "effects" && (
                 <EffectsPanel
                   brightness={brightness}
