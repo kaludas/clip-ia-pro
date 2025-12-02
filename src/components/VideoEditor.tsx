@@ -546,7 +546,6 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               trimEnd={trimEnd}
               audioTracks={audioTracks}
               layers={layers}
-              videoUrl={videoUrl}
               onSeek={handleSeek}
               onPlayPause={togglePlayPause}
               onVolumeChange={(vol) => {
