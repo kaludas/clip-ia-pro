@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw, Save, Sparkles, Download, ChevronLeft, Volume2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ImprovedTimeline } from "./editor/ImprovedTimeline";
+import { UnifiedTimeline } from "./editor/UnifiedTimeline";
 import { EffectsPanel } from "./editor/EffectsPanel";
 import { TextOverlay } from "./editor/TextOverlay";
 import { ExportPanel } from "./editor/ExportPanel";
@@ -384,13 +384,15 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
           </div>
           
           {/* Playback Controls */}
-          <ImprovedTimeline
+          <UnifiedTimeline
             currentTime={currentTime}
             duration={duration}
             isPlaying={isPlaying}
             volume={volume}
             trimStart={trimStart}
             trimEnd={trimEnd}
+            audioTracks={audioTracks}
+            layers={layers}
             onSeek={handleSeek}
             onPlayPause={togglePlayPause}
             onVolumeChange={(vol) => {
@@ -410,6 +412,22 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   Math.min(trimEnd, videoRef.current.currentTime + seconds)
                 );
               }
+            }}
+            onAudioVolumeChange={(id, vol) => {
+              setAudioTracks(audioTracks.map(track =>
+                track.id === id ? { ...track, volume: vol } : track
+              ));
+            }}
+            onAudioRemove={(id) => {
+              setAudioTracks(audioTracks.filter(track => track.id !== id));
+            }}
+            onLayerToggle={(id) => {
+              setLayers(layers.map(layer =>
+                layer.id === id ? { ...layer, visible: !layer.visible } : layer
+              ));
+            }}
+            onLayerRemove={(id) => {
+              setLayers(layers.filter(layer => layer.id !== id));
             }}
           />
         </div>
