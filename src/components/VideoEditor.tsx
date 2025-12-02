@@ -355,10 +355,10 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   };
 
   return (
-    <div className="min-h-screen pt-20 pb-10 px-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+    <div className="min-h-screen pt-20 pb-4 bg-background">
+      {/* Header */}
+      <div className="px-6 pb-4 border-b border-border/50">
+        <div className="max-w-[1920px] mx-auto flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
             <ChevronLeft className="w-4 h-4" />
             {t("editor.back")}
@@ -368,338 +368,338 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               <RotateCcw className="w-4 h-4" />
               {t("editor.reset")}
             </Button>
-            <Button variant="glass" className="gap-2">
+            <Button variant="default" className="gap-2 bg-primary text-primary-foreground">
               <Save className="w-4 h-4" />
               {t("editor.save")}
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Video Preview */}
-        <div className="glass p-6 rounded-3xl mb-6">
-          <div className="relative aspect-video bg-black rounded-2xl overflow-hidden mb-6">
-            <video
-              ref={videoRef}
-              src={videoUrl || "/placeholder-video.mp4"}
-              className="absolute inset-0 w-full h-full object-contain opacity-0"
-              playsInline
-            />
-            <canvas
-              ref={canvasRef}
-              className="absolute inset-0 w-full h-full object-contain"
-            />
+      {/* Main Editor Layout */}
+      <div className="flex h-[calc(100vh-140px)]">
+        {/* Left Sidebar - Categories */}
+        <div className="w-24 border-r border-border/50 bg-muted/30 flex flex-col items-center py-4 gap-2 overflow-y-auto">
+          <Button
+            variant={activePanel === "viral" ? "default" : "ghost"}
+            onClick={() => setActivePanel("viral")}
+            className="w-16 h-16 flex-col gap-1 text-xs"
+            title="IA Virale"
+          >
+            <Sparkles className="w-5 h-5" />
+            <span>IA</span>
+          </Button>
+          <Button
+            variant={activePanel === "layers" ? "default" : "ghost"}
+            onClick={() => setActivePanel("layers")}
+            className="w-16 h-16 flex-col gap-1 text-xs"
+            title="Médias"
+          >
+            <span className="text-lg">🎬</span>
+            <span>Médias</span>
+          </Button>
+          <Button
+            variant={activePanel === "text" ? "default" : "ghost"}
+            onClick={() => setActivePanel("text")}
+            className="w-16 h-16 flex-col gap-1 text-xs"
+            title="Texte"
+          >
+            <span className="text-lg">📝</span>
+            <span>Texte</span>
+          </Button>
+          <Button
+            variant={activePanel === "effects" ? "default" : "ghost"}
+            onClick={() => setActivePanel("effects")}
+            className="w-16 h-16 flex-col gap-1 text-xs"
+            title="Effets"
+          >
+            <span className="text-lg">✨</span>
+            <span>Effets</span>
+          </Button>
+          <Button
+            variant={activePanel === "music" ? "default" : "ghost"}
+            onClick={() => setActivePanel("music")}
+            className="w-16 h-16 flex-col gap-1 text-xs"
+            title="Audio"
+          >
+            <Volume2 className="w-5 h-5" />
+            <span>Audio</span>
+          </Button>
+          <Button
+            variant={activePanel === "subtitles" ? "default" : "ghost"}
+            onClick={() => setActivePanel("subtitles")}
+            className="w-16 h-16 flex-col gap-1 text-xs"
+            title="Sous-titres"
+          >
+            <span className="text-lg">CC</span>
+            <span>CC</span>
+          </Button>
+          <Button
+            variant={activePanel === "publish" ? "default" : "ghost"}
+            onClick={() => setActivePanel("publish")}
+            className="w-16 h-16 flex-col gap-1 text-xs"
+            title="Publication"
+          >
+            <span className="text-lg">📤</span>
+            <span>Publier</span>
+          </Button>
+          <Button
+            variant={activePanel === "export" ? "default" : "ghost"}
+            onClick={() => setActivePanel("export")}
+            className="w-16 h-16 flex-col gap-1 text-xs"
+            title="Export"
+          >
+            <Download className="w-5 h-5" />
+            <span>Export</span>
+          </Button>
+        </div>
+
+        {/* Center - Video Preview & Timeline */}
+        <div className="flex-1 flex flex-col">
+          {/* Video Preview */}
+          <div className="flex-1 flex items-center justify-center p-6 bg-black/20">
+            <div className="relative w-full max-w-4xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
+              <video
+                ref={videoRef}
+                src={videoUrl || "/placeholder-video.mp4"}
+                className="absolute inset-0 w-full h-full object-contain opacity-0"
+                playsInline
+              />
+              <canvas
+                ref={canvasRef}
+                className="absolute inset-0 w-full h-full object-contain"
+              />
+            </div>
           </div>
-          
-          {/* Playback Controls */}
-          <UnifiedTimeline
-            currentTime={currentTime}
-            duration={duration}
-            isPlaying={isPlaying}
-            volume={volume}
-            trimStart={trimStart}
-            trimEnd={trimEnd}
-            audioTracks={audioTracks}
-            layers={layers}
-            onSeek={handleSeek}
-            onPlayPause={togglePlayPause}
-            onVolumeChange={(vol) => {
-              setVolume(vol);
-              if (videoRef.current) {
-                videoRef.current.volume = vol / 100;
-              }
-            }}
-            onTrimChange={(start, end) => {
-              setTrimStart(start);
-              setTrimEnd(end);
-            }}
-            onSkip={(seconds) => {
-              if (videoRef.current) {
-                videoRef.current.currentTime = Math.max(
-                  trimStart,
-                  Math.min(trimEnd, videoRef.current.currentTime + seconds)
-                );
-              }
-            }}
-            onAudioVolumeChange={(id, vol) => {
-              setAudioTracks(audioTracks.map(track =>
-                track.id === id ? { ...track, volume: vol } : track
-              ));
-            }}
-            onAudioRemove={(id) => {
-              setAudioTracks(audioTracks.filter(track => track.id !== id));
-              toast.success("Piste audio supprimée");
-            }}
-            onAudioTimeChange={(id, startTime, duration) => {
-              setAudioTracks(audioTracks.map(track =>
-                track.id === id ? { ...track, startTime, duration } : track
-              ));
-            }}
-            onLayerToggle={(id) => {
-              setLayers(layers.map(layer =>
-                layer.id === id ? { ...layer, visible: !layer.visible } : layer
-              ));
-            }}
-            onLayerRemove={(id) => {
-              setLayers(layers.filter(layer => layer.id !== id));
-              toast.success("Calque supprimé");
-            }}
-            onLayerTimeChange={(id, startTime, duration) => {
-              setLayers(layers.map(layer =>
-                layer.id === id ? { ...layer, startTime, duration } : layer
-              ));
-            }}
-            onVideoSplit={(time) => {
-              // Create two segments from split point
-              if (videoSegments.length === 0) {
-                // First split: create two segments from trimStart to trimEnd
-                const seg1 = {
-                  id: `seg-${Date.now()}-1`,
-                  startTime: trimStart,
-                  duration: time - trimStart
-                };
-                const seg2 = {
-                  id: `seg-${Date.now()}-2`,
-                  startTime: time,
-                  duration: trimEnd - time
-                };
-                setVideoSegments([seg1, seg2]);
-                toast.success("✂️ Vidéo coupée en 2 segments");
-              } else {
-                // Find which segment contains the split point
-                const segmentIndex = videoSegments.findIndex(
-                  seg => time >= seg.startTime && time <= seg.startTime + seg.duration
-                );
-                
-                if (segmentIndex !== -1) {
-                  const segment = videoSegments[segmentIndex];
-                  const newSegments = [...videoSegments];
-                  
-                  // Split the segment
+
+          {/* Timeline */}
+          <div className="border-t border-border/50 bg-muted/20">
+            <UnifiedTimeline
+              currentTime={currentTime}
+              duration={duration}
+              isPlaying={isPlaying}
+              volume={volume}
+              trimStart={trimStart}
+              trimEnd={trimEnd}
+              audioTracks={audioTracks}
+              layers={layers}
+              onSeek={handleSeek}
+              onPlayPause={togglePlayPause}
+              onVolumeChange={(vol) => {
+                setVolume(vol);
+                if (videoRef.current) {
+                  videoRef.current.volume = vol / 100;
+                }
+              }}
+              onTrimChange={(start, end) => {
+                setTrimStart(start);
+                setTrimEnd(end);
+              }}
+              onSkip={(seconds) => {
+                if (videoRef.current) {
+                  videoRef.current.currentTime = Math.max(
+                    trimStart,
+                    Math.min(trimEnd, videoRef.current.currentTime + seconds)
+                  );
+                }
+              }}
+              onAudioVolumeChange={(id, vol) => {
+                setAudioTracks(audioTracks.map(track =>
+                  track.id === id ? { ...track, volume: vol } : track
+                ));
+              }}
+              onAudioRemove={(id) => {
+                setAudioTracks(audioTracks.filter(track => track.id !== id));
+                toast.success("Piste audio supprimée");
+              }}
+              onAudioTimeChange={(id, startTime, duration) => {
+                setAudioTracks(audioTracks.map(track =>
+                  track.id === id ? { ...track, startTime, duration } : track
+                ));
+              }}
+              onLayerToggle={(id) => {
+                setLayers(layers.map(layer =>
+                  layer.id === id ? { ...layer, visible: !layer.visible } : layer
+                ));
+              }}
+              onLayerRemove={(id) => {
+                setLayers(layers.filter(layer => layer.id !== id));
+                toast.success("Calque supprimé");
+              }}
+              onLayerTimeChange={(id, startTime, duration) => {
+                setLayers(layers.map(layer =>
+                  layer.id === id ? { ...layer, startTime, duration } : layer
+                ));
+              }}
+              onVideoSplit={(time) => {
+                if (videoSegments.length === 0) {
                   const seg1 = {
                     id: `seg-${Date.now()}-1`,
-                    startTime: segment.startTime,
-                    duration: time - segment.startTime
+                    startTime: trimStart,
+                    duration: time - trimStart
                   };
                   const seg2 = {
                     id: `seg-${Date.now()}-2`,
                     startTime: time,
-                    duration: (segment.startTime + segment.duration) - time
+                    duration: trimEnd - time
                   };
-                  
-                  // Replace the original segment with two new ones
-                  newSegments.splice(segmentIndex, 1, seg1, seg2);
-                  setVideoSegments(newSegments);
-                  toast.success(`✂️ Segment ${segmentIndex + 1} coupé`);
+                  setVideoSegments([seg1, seg2]);
+                  toast.success("✂️ Vidéo coupée en 2 segments");
                 } else {
-                  toast.error("Position de coupe invalide");
+                  const segmentIndex = videoSegments.findIndex(
+                    seg => time >= seg.startTime && time <= seg.startTime + seg.duration
+                  );
+                  
+                  if (segmentIndex !== -1) {
+                    const segment = videoSegments[segmentIndex];
+                    const newSegments = [...videoSegments];
+                    
+                    const seg1 = {
+                      id: `seg-${Date.now()}-1`,
+                      startTime: segment.startTime,
+                      duration: time - segment.startTime
+                    };
+                    const seg2 = {
+                      id: `seg-${Date.now()}-2`,
+                      startTime: time,
+                      duration: (segment.startTime + segment.duration) - time
+                    };
+                    
+                    newSegments.splice(segmentIndex, 1, seg1, seg2);
+                    setVideoSegments(newSegments);
+                    toast.success(`✂️ Segment ${segmentIndex + 1} coupé`);
+                  } else {
+                    toast.error("Position de coupe invalide");
+                  }
                 }
-              }
-            }}
-            onVideoSegmentRemove={(id) => {
-              setVideoSegments(videoSegments.filter(seg => seg.id !== id));
-              toast.success("🗑️ Segment supprimé");
-            }}
-            onVideoSegmentTimeChange={(id, startTime, duration) => {
-              setVideoSegments(videoSegments.map(seg =>
-                seg.id === id ? { ...seg, startTime, duration } : seg
-              ));
-            }}
-            videoSegments={videoSegments}
-            textOverlays={textOverlays}
-            subtitles={generatedSubtitles}
-            onTextOverlayRemove={(id) => {
-              setTextOverlays(textOverlays.filter(text => text.id !== id));
-              toast.success("Texte supprimé");
-            }}
-            onTextOverlayTimeChange={(id, startTime, endTime) => {
-              setTextOverlays(textOverlays.map(text =>
-                text.id === id ? { ...text, startTime, endTime } : text
-              ));
-            }}
-          />
+              }}
+              onVideoSegmentRemove={(id) => {
+                setVideoSegments(videoSegments.filter(seg => seg.id !== id));
+                toast.success("🗑️ Segment supprimé");
+              }}
+              onVideoSegmentTimeChange={(id, startTime, duration) => {
+                setVideoSegments(videoSegments.map(seg =>
+                  seg.id === id ? { ...seg, startTime, duration } : seg
+                ));
+              }}
+              videoSegments={videoSegments}
+              textOverlays={textOverlays}
+              subtitles={generatedSubtitles}
+              onTextOverlayRemove={(id) => {
+                setTextOverlays(textOverlays.filter(text => text.id !== id));
+                toast.success("Texte supprimé");
+              }}
+              onTextOverlayTimeChange={(id, startTime, endTime) => {
+                setTextOverlays(textOverlays.map(text =>
+                  text.id === id ? { ...text, startTime, endTime } : text
+                ));
+              }}
+            />
+          </div>
         </div>
 
-        {/* Editor Panels */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Effects Panel */}
-          <div className="lg:col-span-2">
-            <div className="glass p-6 rounded-3xl">
-              {/* Panel Tabs */}
-              <div className="flex gap-2 mb-6 p-1 glass rounded-2xl overflow-x-auto">
-                <Button
-                  variant={activePanel === "viral" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("viral")}
-                  className="flex-1 gap-2 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {t("editor.viral")}
-                </Button>
-                <Button
-                  variant={activePanel === "effects" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("effects")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  {t("editor.effects")}
-                </Button>
-                <Button
-                  variant={activePanel === "text" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("text")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  {t("editor.text")}
-                </Button>
-                <Button
-                  variant={activePanel === "speed" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("speed")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  Vitesse
-                </Button>
-                <Button
-                  variant={activePanel === "layers" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("layers")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  Calques
-                </Button>
-                <Button
-                  variant={activePanel === "templates" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("templates")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  Titres
-                </Button>
-                <Button
-                  variant={activePanel === "schedule" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("schedule")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  📅
-                </Button>
-                <Button
-                  variant={activePanel === "analytics" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("analytics")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  📊
-                </Button>
-                <Button
-                  variant={activePanel === "collaboration" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("collaboration")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  👥
-                </Button>
-                <Button
-                  variant={activePanel === "subtitles" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("subtitles")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  CC
-                </Button>
-                <Button
-                  variant={activePanel === "translate" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("translate")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  🌐
-                </Button>
-                <Button
-                  variant={activePanel === "publish" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("publish")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  📤
-                </Button>
-                <Button
-                  variant={activePanel === "music" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("music")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                  title="Bibliothèque musicale"
-                >
-                  🎵
-                </Button>
-                <Button
-                  variant={activePanel === "audio" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("audio")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                  title="Timeline audio"
-                >
-                  🎚️
-                </Button>
-                <Button
-                  variant={activePanel === "normalize" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("normalize")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                  title="Normalisation IA"
-                >
-                  🎛️
-                </Button>
-                <Button
-                  variant={activePanel === "products" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("products")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                  title="Reconnaissance produits"
-                >
-                  📦
-                </Button>
-                <Button
-                  variant={activePanel === "safety" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("safety")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                  title="Modération contenu"
-                >
-                  🛡️
-                </Button>
-                <Button
-                  variant={activePanel === "virality" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("virality")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                  title="Score viralité"
-                >
-                  🎯
-                </Button>
-                <Button
-                  variant={activePanel === "security" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("security")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                  title="Copyright checker"
-                >
-                  ©️
-                </Button>
-                <Button
-                  variant={activePanel === "export" ? "hero" : "ghost"}
-                  onClick={() => setActivePanel("export")}
-                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
-                >
-                  {t("editor.export")}
-                </Button>
+        {/* Right Panel - Tools */}
+        <div className="w-80 border-l border-border/50 bg-muted/20 overflow-y-auto">
+          <div className="p-4">
+            {/* IA Virale */}
+            {activePanel === "viral" && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm mb-4">🎯 IA Virale</h3>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={() => setActivePanel("viral")}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Moments viraux
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={() => setActivePanel("virality")}
+                  >
+                    🎯 Score viralité
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={() => setActivePanel("products")}
+                  >
+                    📦 Produits
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={() => setActivePanel("safety")}
+                  >
+                    🛡️ Modération
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={() => setActivePanel("security")}
+                  >
+                    ©️ Copyright
+                  </Button>
+                </div>
+                <div className="mt-6">
+                  <ViralMomentDetector 
+                    videoRef={videoRef}
+                    onMomentSelect={handleMomentSelect}
+                  />
+                </div>
               </div>
+            )}
 
-              {/* Panel Content */}
-              {activePanel === "viral" && (
-                <ViralMomentDetector 
-                  videoRef={videoRef}
-                  onMomentSelect={handleMomentSelect}
+            {activePanel === "virality" && <ViralityScore videoRef={videoRef} />}
+            {activePanel === "products" && <ProductRecognition videoRef={videoRef} />}
+            {activePanel === "safety" && <ContentSafety videoRef={videoRef} />}
+            {activePanel === "security" && (
+              <SecurityChecker
+                audioTitle="Extrait de stream"
+                audioArtist="Streamer"
+                audioUrl={videoUrl || ""}
+                transcript={generatedSubtitles.map(s => s.text).join(' ')}
+                platform="tiktok"
+                onCheckComplete={(results) => {
+                  console.log("Security check results:", results);
+                }}
+              />
+            )}
+
+            {/* Médias */}
+            {activePanel === "layers" && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm mb-4">🎬 Médias & Calques</h3>
+                <LayerManager
+                  layers={layers}
+                  onLayerUpdate={setLayers}
+                  videoDuration={duration}
                 />
-              )}
-              
-              {activePanel === "effects" && (
-                <EffectsPanel
-                  brightness={brightness}
-                  contrast={contrast}
-                  saturation={saturation}
-                  blur={blur}
-                  selectedFilter={selectedFilter}
-                  onBrightnessChange={setBrightness}
-                  onContrastChange={setContrast}
-                  onSaturationChange={setSaturation}
-                  onBlurChange={setBlur}
-                  onFilterChange={setSelectedFilter}
-                />
-              )}
-              
-              {activePanel === "text" && (
+              </div>
+            )}
+
+            {/* Texte */}
+            {activePanel === "text" && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm mb-4">📝 Texte & Titres</h3>
+                <div className="space-y-2 mb-4">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => {}}
+                  >
+                    Texte personnalisé
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setActivePanel("templates")}
+                  >
+                    Modèles de titres
+                  </Button>
+                </div>
                 <TextOverlay
                   textOverlays={textOverlays}
                   onAddText={addTextOverlay}
@@ -712,64 +712,90 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                     setTextOverlays(textOverlays.filter(overlay => overlay.id !== id));
                   }}
                 />
-              )}
-              
-              {activePanel === "speed" && (
-                <SpeedControl
-                  currentTime={currentTime}
-                  duration={duration}
-                  onSpeedChange={(start, end, speed) => {
-                    setSpeedSegments([...speedSegments, { start, end, speed }]);
-                    toast.success(`Vitesse ${speed}% appliquée de ${start.toFixed(1)}s à ${end.toFixed(1)}s`);
-                  }}
+              </div>
+            )}
+
+            {activePanel === "templates" && (
+              <TitleTemplates
+                onApplyTemplate={(template, text) => {
+                  addTextOverlay(text, template.animation);
+                }}
+              />
+            )}
+
+            {/* Effets */}
+            {activePanel === "effects" && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm mb-4">✨ Effets & Vitesse</h3>
+                <div className="space-y-2 mb-4">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => {}}
+                  >
+                    Filtres visuels
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setActivePanel("speed")}
+                  >
+                    Contrôle vitesse
+                  </Button>
+                </div>
+                <EffectsPanel
+                  brightness={brightness}
+                  contrast={contrast}
+                  saturation={saturation}
+                  blur={blur}
+                  selectedFilter={selectedFilter}
+                  onBrightnessChange={setBrightness}
+                  onContrastChange={setContrast}
+                  onSaturationChange={setSaturation}
+                  onBlurChange={setBlur}
+                  onFilterChange={setSelectedFilter}
                 />
-              )}
-              
-              {activePanel === "layers" && (
-                <LayerManager
-                  layers={layers}
-                  onLayerUpdate={setLayers}
-                  videoDuration={duration}
-                />
-              )}
-              
-              {activePanel === "templates" && (
-                <TitleTemplates
-                  onApplyTemplate={(template, text) => {
-                    addTextOverlay(text, template.animation);
-                  }}
-                />
-              )}
-              
-              {activePanel === "schedule" && <SchedulePanel />}
-              
-              {activePanel === "analytics" && (
-                <AnalyticsDashboard projectId="demo-project-id" />
-              )}
-              
-              {activePanel === "collaboration" && (
-                <CollaborationPanel projectId="demo-project-id" />
-              )}
-              
-              {activePanel === "subtitles" && (
-                <SubtitleGenerator 
-                  onSubtitlesGenerated={(segments) => {
-                    setGeneratedSubtitles(segments);
-                    console.log("Subtitles generated:", segments);
-                    toast.success(`${segments.length} segments générés !`);
-                  }}
-                />
-              )}
-              
-              {activePanel === "translate" && (
-                <SubtitleTranslator subtitles={generatedSubtitles} />
-              )}
-              
-              {activePanel === "publish" && (
-                <SocialMediaPublisher videoUrl={videoUrl} duration={duration} />
-              )}
-              
-              {activePanel === "music" && (
+              </div>
+            )}
+
+            {activePanel === "speed" && (
+              <SpeedControl
+                currentTime={currentTime}
+                duration={duration}
+                onSpeedChange={(start, end, speed) => {
+                  setSpeedSegments([...speedSegments, { start, end, speed }]);
+                  toast.success(`Vitesse ${speed}% appliquée de ${start.toFixed(1)}s à ${end.toFixed(1)}s`);
+                }}
+              />
+            )}
+
+            {/* Audio */}
+            {activePanel === "music" && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm mb-4">🎵 Audio & Musique</h3>
+                <div className="space-y-2 mb-4">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => {}}
+                  >
+                    Bibliothèque musicale
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setActivePanel("audio")}
+                  >
+                    🎚️ Timeline audio
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setActivePanel("normalize")}
+                  >
+                    🎛️ Normalisation IA
+                  </Button>
+                </div>
                 <MusicLibrary
                   onTrackSelect={(track) => {
                     setAudioTracks([...audioTracks, {
@@ -782,94 +808,127 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                     }]);
                   }}
                 />
-              )}
-              
-              {activePanel === "audio" && (
-                <AudioTimeline
-                  tracks={audioTracks}
-                  currentTime={currentTime}
-                  totalDuration={duration}
-                  onVolumeChange={(trackId, volume) => {
-                    setAudioTracks(audioTracks.map(track =>
-                      track.id === trackId ? { ...track, volume } : track
-                    ));
-                  }}
-                  onTrackRemove={(trackId) => {
-                    setAudioTracks(audioTracks.filter(track => track.id !== trackId));
+              </div>
+            )}
+
+            {activePanel === "audio" && (
+              <AudioTimeline
+                tracks={audioTracks}
+                currentTime={currentTime}
+                totalDuration={duration}
+                onVolumeChange={(trackId, volume) => {
+                  setAudioTracks(audioTracks.map(track =>
+                    track.id === trackId ? { ...track, volume } : track
+                  ));
+                }}
+                onTrackRemove={(trackId) => {
+                  setAudioTracks(audioTracks.filter(track => track.id !== trackId));
+                }}
+              />
+            )}
+
+            {activePanel === "normalize" && (
+              <AudioNormalization
+                videoRef={videoRef}
+                onApplyNormalization={(settings) => {
+                  console.log("Applying normalization:", settings);
+                  toast.success("Paramètres de normalisation appliqués");
+                }}
+              />
+            )}
+
+            {/* Sous-titres */}
+            {activePanel === "subtitles" && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm mb-4">CC Sous-titres</h3>
+                <div className="space-y-2 mb-4">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => {}}
+                  >
+                    Générer sous-titres
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setActivePanel("translate")}
+                  >
+                    🌐 Traduire
+                  </Button>
+                </div>
+                <SubtitleGenerator 
+                  onSubtitlesGenerated={(segments) => {
+                    setGeneratedSubtitles(segments);
+                    console.log("Subtitles generated:", segments);
+                    toast.success(`${segments.length} segments générés !`);
                   }}
                 />
-              )}
-              
-              {activePanel === "normalize" && (
-                <AudioNormalization
-                  videoRef={videoRef}
-                  onApplyNormalization={(settings) => {
-                    console.log("Applying normalization:", settings);
-                    toast.success("Paramètres de normalisation appliqués");
-                  }}
-                />
-              )}
-              
-              {activePanel === "products" && (
-                <ProductRecognition videoRef={videoRef} />
-              )}
-              
-              {activePanel === "safety" && (
-                <ContentSafety videoRef={videoRef} />
-              )}
-              
-              {activePanel === "virality" && (
-                <ViralityScore videoRef={videoRef} />
-              )}
-              
-              {activePanel === "security" && (
-                <SecurityChecker
-                  audioTitle="Extrait de stream"
-                  audioArtist="Streamer"
-                  audioUrl={videoUrl || ""}
-                  transcript={generatedSubtitles.map(s => s.text).join(' ')}
-                  platform="tiktok"
-                  onCheckComplete={(results) => {
-                    console.log("Security check results:", results);
-                  }}
-                />
-              )}
-              
-              {activePanel === "export" && (
+              </div>
+            )}
+
+            {activePanel === "translate" && (
+              <SubtitleTranslator subtitles={generatedSubtitles} />
+            )}
+
+            {/* Publication */}
+            {activePanel === "publish" && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm mb-4">📤 Publication</h3>
+                <div className="space-y-2 mb-4">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => {}}
+                  >
+                    Réseaux sociaux
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setActivePanel("schedule")}
+                  >
+                    📅 Planifier
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setActivePanel("analytics")}
+                  >
+                    📊 Analytics
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setActivePanel("collaboration")}
+                  >
+                    👥 Collaboration
+                  </Button>
+                </div>
+                <SocialMediaPublisher videoUrl={videoUrl} duration={duration} />
+              </div>
+            )}
+
+            {activePanel === "schedule" && <SchedulePanel />}
+            {activePanel === "analytics" && (
+              <AnalyticsDashboard projectId="demo-project-id" />
+            )}
+            {activePanel === "collaboration" && (
+              <CollaborationPanel projectId="demo-project-id" />
+            )}
+
+            {/* Export */}
+            {activePanel === "export" && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm mb-4">💾 Export</h3>
                 <ExportPanel
                   videoRef={videoRef}
                   canvasRef={canvasRef}
                   trimStart={trimStart}
                   trimEnd={trimEnd}
                 />
-              )}
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="space-y-4">
-            <div className="glass p-6 rounded-3xl">
-              <h3 className="text-lg font-bold mb-4">{t("editor.quickActions")}</h3>
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  {t("editor.aiSuggestions")}
-                </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
-                  <Download className="w-4 h-4" />
-                  {t("editor.exportHD")}
-                </Button>
               </div>
-            </div>
-            
-            <div className="glass p-6 rounded-3xl">
-              <h3 className="text-lg font-bold mb-2">{t("editor.tips")}</h3>
-              <ul className="text-sm text-muted-foreground space-y-2">
-                <li>• {t("editor.tip1")}</li>
-                <li>• {t("editor.tip2")}</li>
-                <li>• {t("editor.tip3")}</li>
-              </ul>
-            </div>
+            )}
           </div>
         </div>
       </div>
