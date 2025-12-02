@@ -20,6 +20,9 @@ import { SecurityChecker } from "./security/SecurityChecker";
 import { ProductRecognition } from "./editor/ProductRecognition";
 import { ContentSafety } from "./editor/ContentSafety";
 import { ViralityScore } from "./editor/ViralityScore";
+import { MusicLibrary } from "./editor/MusicLibrary";
+import { AudioTimeline } from "./editor/AudioTimeline";
+import { AudioNormalization } from "./editor/AudioNormalization";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +43,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
   const [volume, setVolume] = useState(100);
-  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration" | "subtitles" | "translate" | "publish" | "security" | "products" | "safety" | "virality">("viral");
+  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration" | "subtitles" | "translate" | "publish" | "security" | "products" | "safety" | "virality" | "music" | "audio" | "normalize">("viral");
   
   // Subtitles state
   const [generatedSubtitles, setGeneratedSubtitles] = useState<Array<{
@@ -77,6 +80,16 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     start: number;
     end: number;
     speed: number;
+  }>>([]);
+
+  // Audio tracks state
+  const [audioTracks, setAudioTracks] = useState<Array<{
+    id: string;
+    name: string;
+    url: string;
+    volume: number;
+    startTime: number;
+    duration: number;
   }>>([]);
 
   useEffect(() => {
@@ -494,6 +507,30 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   📤
                 </Button>
                 <Button
+                  variant={activePanel === "music" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("music")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                  title="Bibliothèque musicale"
+                >
+                  🎵
+                </Button>
+                <Button
+                  variant={activePanel === "audio" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("audio")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                  title="Timeline audio"
+                >
+                  🎚️
+                </Button>
+                <Button
+                  variant={activePanel === "normalize" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("normalize")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                  title="Normalisation IA"
+                >
+                  🎛️
+                </Button>
+                <Button
                   variant={activePanel === "products" ? "hero" : "ghost"}
                   onClick={() => setActivePanel("products")}
                   className="flex-1 whitespace-nowrap text-xs sm:text-sm"
@@ -624,6 +661,47 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               
               {activePanel === "publish" && (
                 <SocialMediaPublisher videoUrl={videoUrl} duration={duration} />
+              )}
+              
+              {activePanel === "music" && (
+                <MusicLibrary
+                  onTrackSelect={(track) => {
+                    setAudioTracks([...audioTracks, {
+                      id: track.id,
+                      name: track.title,
+                      url: track.file_path,
+                      volume: 80,
+                      startTime: 0,
+                      duration: track.duration
+                    }]);
+                  }}
+                />
+              )}
+              
+              {activePanel === "audio" && (
+                <AudioTimeline
+                  tracks={audioTracks}
+                  currentTime={currentTime}
+                  totalDuration={duration}
+                  onVolumeChange={(trackId, volume) => {
+                    setAudioTracks(audioTracks.map(track =>
+                      track.id === trackId ? { ...track, volume } : track
+                    ));
+                  }}
+                  onTrackRemove={(trackId) => {
+                    setAudioTracks(audioTracks.filter(track => track.id !== trackId));
+                  }}
+                />
+              )}
+              
+              {activePanel === "normalize" && (
+                <AudioNormalization
+                  videoRef={videoRef}
+                  onApplyNormalization={(settings) => {
+                    console.log("Applying normalization:", settings);
+                    toast.success("Paramètres de normalisation appliqués");
+                  }}
+                />
               )}
               
               {activePanel === "products" && (

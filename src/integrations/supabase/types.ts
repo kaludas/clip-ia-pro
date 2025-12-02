@@ -55,6 +55,57 @@ export type Database = {
           },
         ]
       }
+      music_tracks: {
+        Row: {
+          artist: string
+          bpm: number | null
+          created_at: string | null
+          duration: number
+          file_path: string
+          genre: string
+          id: string
+          is_copyright_free: boolean | null
+          license_type: string | null
+          mood: string
+          preview_url: string | null
+          title: string
+          updated_at: string | null
+          waveform_data: Json | null
+        }
+        Insert: {
+          artist: string
+          bpm?: number | null
+          created_at?: string | null
+          duration: number
+          file_path: string
+          genre: string
+          id?: string
+          is_copyright_free?: boolean | null
+          license_type?: string | null
+          mood: string
+          preview_url?: string | null
+          title: string
+          updated_at?: string | null
+          waveform_data?: Json | null
+        }
+        Update: {
+          artist?: string
+          bpm?: number | null
+          created_at?: string | null
+          duration?: number
+          file_path?: string
+          genre?: string
+          id?: string
+          is_copyright_free?: boolean | null
+          license_type?: string | null
+          mood?: string
+          preview_url?: string | null
+          title?: string
+          updated_at?: string | null
+          waveform_data?: Json | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
