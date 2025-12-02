@@ -2,6 +2,7 @@ import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
 import InteractiveDemo from "@/components/InteractiveDemo";
+import AllFeaturesList from "@/components/AllFeaturesList";
 import Pricing from "@/components/Pricing";
 import ChatBot from "@/components/ChatBot";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -15,6 +16,7 @@ const Index = () => {
       <Hero />
       <Features />
       <InteractiveDemo />
+      <AllFeaturesList />
       <Pricing />
       <ChatBot />
       
