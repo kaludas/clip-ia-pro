@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Subtitles, Upload } from "lucide-react";
@@ -13,15 +13,39 @@ interface Segment {
 
 interface SubtitleGeneratorProps {
   videoUrl?: string;
+  existingTranscription?: {
+    text: string;
+    segments: Segment[];
+  } | null;
   onSubtitlesGenerated?: (segments: Segment[]) => void;
 }
 
-const SubtitleGenerator = ({ videoUrl, onSubtitlesGenerated }: SubtitleGeneratorProps) => {
+const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerated }: SubtitleGeneratorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcription, setTranscription] = useState<{
     text: string;
     segments: Segment[];
-  } | null>(null);
+  } | null>(existingTranscription || null);
+  const [selectedLanguage, setSelectedLanguage] = useState('fr');
+
+  const AVAILABLE_LANGUAGES = [
+    { code: 'fr', name: 'Français' },
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Español' },
+    { code: 'de', name: 'Deutsch' },
+    { code: 'it', name: 'Italiano' },
+    { code: 'pt', name: 'Português' },
+    { code: 'ja', name: '日本語' },
+    { code: 'ko', name: '한국어' },
+    { code: 'zh', name: '中文' },
+  ];
+
+  // Sync with existing transcription from parent
+  useEffect(() => {
+    if (existingTranscription && !transcription) {
+      setTranscription(existingTranscription);
+    }
+  }, [existingTranscription]);
 
   const handleGenerateFromVideo = async () => {
     if (!videoUrl) {
@@ -85,7 +109,7 @@ const SubtitleGenerator = ({ videoUrl, onSubtitlesGenerated }: SubtitleGenerator
       const { data, error } = await supabase.functions.invoke('audio-transcription', {
         body: { 
           audio: base64Audio,
-          language: 'fr',
+          language: selectedLanguage,
           format
         }
       });
@@ -150,7 +174,7 @@ const SubtitleGenerator = ({ videoUrl, onSubtitlesGenerated }: SubtitleGenerator
         const { data, error } = await supabase.functions.invoke('audio-transcription', {
           body: { 
             audio: base64Audio,
-            language: 'fr',
+            language: selectedLanguage,
             format
           }
         });
@@ -205,6 +229,25 @@ const SubtitleGenerator = ({ videoUrl, onSubtitlesGenerated }: SubtitleGenerator
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Language Selector */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">
+            Langue source de la vidéo
+          </label>
+          <select
+            value={selectedLanguage}
+            onChange={(e) => setSelectedLanguage(e.target.value)}
+            className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            disabled={isProcessing}
+          >
+            {AVAILABLE_LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {videoUrl && (
           <Button
             onClick={handleGenerateFromVideo}
