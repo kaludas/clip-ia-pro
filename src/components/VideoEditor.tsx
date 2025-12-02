@@ -59,6 +59,22 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     text: string;
   }>>>({});
   
+  // Viral moments state
+  const [viralMoments, setViralMoments] = useState<Array<{
+    start: number;
+    end: number;
+    reason: string;
+    hook: string;
+    score: number;
+    tags: string[];
+  }>>([]);
+  
+  // Transcription state (persist subtitle generation)
+  const [transcriptionData, setTranscriptionData] = useState<{
+    text: string;
+    segments: Array<{ start: number; end: number; text: string; }>;
+  } | null>(null);
+  
   // Effects state
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
@@ -655,6 +671,8 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   <ViralMomentDetector 
                     videoRef={videoRef}
                     onMomentSelect={handleMomentSelect}
+                    existingMoments={viralMoments}
+                    onMomentsUpdate={setViralMoments}
                   />
                 </div>
               </div>
@@ -964,8 +982,13 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                 </div>
                 <SubtitleGenerator 
                   videoUrl={videoUrl}
+                  existingTranscription={transcriptionData}
                   onSubtitlesGenerated={(segments) => {
                     setGeneratedSubtitles(segments);
+                    setTranscriptionData({
+                      text: segments.map(s => s.text).join(' '),
+                      segments
+                    });
                     console.log("Subtitles generated:", segments);
                     toast.success(`${segments.length} segments générés !`);
                   }}
@@ -986,6 +1009,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                 </Button>
                 <SubtitleTranslator 
                   subtitles={generatedSubtitles}
+                  existingTranslations={translatedSubtitles}
                   onTranslationsGenerated={(translations) => {
                     setTranslatedSubtitles(translations);
                     console.log("Translations generated:", translations);

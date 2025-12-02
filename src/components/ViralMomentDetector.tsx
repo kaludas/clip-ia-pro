@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Sparkles, Play, Scissors, TrendingUp, Clock, Tag, Filter, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -22,12 +22,14 @@ interface ViralMoment {
 interface ViralMomentDetectorProps {
   videoRef: React.RefObject<HTMLVideoElement>;
   onMomentSelect: (start: number, end: number) => void;
+  existingMoments?: ViralMoment[];
+  onMomentsUpdate?: (moments: ViralMoment[]) => void;
 }
 
-export const ViralMomentDetector = ({ videoRef, onMomentSelect }: ViralMomentDetectorProps) => {
+export const ViralMomentDetector = ({ videoRef, onMomentSelect, existingMoments = [], onMomentsUpdate }: ViralMomentDetectorProps) => {
   const { t, language } = useLanguage();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [moments, setMoments] = useState<ViralMoment[]>([]);
+  const [moments, setMoments] = useState<ViralMoment[]>(existingMoments);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   
   // Filters
@@ -36,6 +38,13 @@ export const ViralMomentDetector = ({ videoRef, onMomentSelect }: ViralMomentDet
   const [maxDuration, setMaxDuration] = useState(120);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Sync with existing moments from parent
+  useEffect(() => {
+    if (existingMoments.length > 0 && moments.length === 0) {
+      setMoments(existingMoments);
+    }
+  }, [existingMoments]);
 
   const captureFrames = async (video: HTMLVideoElement): Promise<string[]> => {
     const frames: string[] = [];
@@ -95,6 +104,11 @@ export const ViralMomentDetector = ({ videoRef, onMomentSelect }: ViralMomentDet
 
       setAnalysisProgress(100);
       setMoments(data.moments);
+      
+      // Notify parent component
+      if (onMomentsUpdate) {
+        onMomentsUpdate(data.moments);
+      }
       
       toast.success(
         language === "fr" 

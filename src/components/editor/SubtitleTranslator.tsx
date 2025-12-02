@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,6 +16,7 @@ interface Subtitle {
 
 interface SubtitleTranslatorProps {
   subtitles: Subtitle[];
+  existingTranslations?: Record<string, Subtitle[]>;
   onTranslationsGenerated?: (translations: Record<string, Subtitle[]>) => void;
 }
 
@@ -34,10 +35,17 @@ const AVAILABLE_LANGUAGES = [
   { code: 'en', name: 'Anglais', flag: '🇬🇧' },
 ];
 
-export default function SubtitleTranslator({ subtitles, onTranslationsGenerated }: SubtitleTranslatorProps) {
+export default function SubtitleTranslator({ subtitles, existingTranslations = {}, onTranslationsGenerated }: SubtitleTranslatorProps) {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [translating, setTranslating] = useState(false);
-  const [translations, setTranslations] = useState<Record<string, Subtitle[]>>({});
+  const [translations, setTranslations] = useState<Record<string, Subtitle[]>>(existingTranslations);
+
+  // Sync with existing translations from parent
+  useEffect(() => {
+    if (Object.keys(existingTranslations).length > 0 && Object.keys(translations).length === 0) {
+      setTranslations(existingTranslations);
+    }
+  }, [existingTranslations]);
 
   const toggleLanguage = (langCode: string) => {
     setSelectedLanguages(prev =>
