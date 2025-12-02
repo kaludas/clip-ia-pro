@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,13 +38,22 @@ interface Moderation {
 
 interface ContentSafetyProps {
   videoRef: React.RefObject<HTMLVideoElement>;
+  existingModeration?: Moderation | null;
+  onModerationComplete?: (moderation: Moderation) => void;
 }
 
-export const ContentSafety = ({ videoRef }: ContentSafetyProps) => {
+export const ContentSafety = ({ videoRef, existingModeration, onModerationComplete }: ContentSafetyProps) => {
   const { language } = useLanguage();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [moderation, setModeration] = useState<Moderation | null>(null);
+  const [moderation, setModeration] = useState<Moderation | null>(existingModeration || null);
   const [platform, setPlatform] = useState<"tiktok" | "youtube" | "instagram" | "twitter">("tiktok");
+
+  // Sync with existing moderation
+  useEffect(() => {
+    if (existingModeration && !moderation) {
+      setModeration(existingModeration);
+    }
+  }, [existingModeration]);
 
   const captureFrames = async (): Promise<string[]> => {
     const video = videoRef.current;
@@ -91,6 +100,9 @@ export const ContentSafety = ({ videoRef }: ContentSafetyProps) => {
       if (error) throw error;
 
       setModeration(data.moderation);
+      if (onModerationComplete) {
+        onModerationComplete(data.moderation);
+      }
       
       if (data.moderation.is_safe) {
         toast.success(language === "fr" ? "✅ Contenu sûr" : "✅ Content safe");

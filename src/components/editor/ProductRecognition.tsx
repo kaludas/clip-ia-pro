@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,12 +30,21 @@ interface Recognition {
 
 interface ProductRecognitionProps {
   videoRef: React.RefObject<HTMLVideoElement>;
+  existingRecognition?: Recognition | null;
+  onRecognitionComplete?: (recognition: Recognition) => void;
 }
 
-export const ProductRecognition = ({ videoRef }: ProductRecognitionProps) => {
+export const ProductRecognition = ({ videoRef, existingRecognition, onRecognitionComplete }: ProductRecognitionProps) => {
   const { language } = useLanguage();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [recognition, setRecognition] = useState<Recognition | null>(null);
+  const [recognition, setRecognition] = useState<Recognition | null>(existingRecognition || null);
+
+  // Sync with existing recognition
+  useEffect(() => {
+    if (existingRecognition && !recognition) {
+      setRecognition(existingRecognition);
+    }
+  }, [existingRecognition]);
 
   const captureCurrentFrame = async (): Promise<string> => {
     const video = videoRef.current;
@@ -71,6 +80,9 @@ export const ProductRecognition = ({ videoRef }: ProductRecognitionProps) => {
       if (error) throw error;
 
       setRecognition(data);
+      if (onRecognitionComplete) {
+        onRecognitionComplete(data);
+      }
       
       const productCount = data.products?.length || 0;
       const locationCount = data.locations?.length || 0;

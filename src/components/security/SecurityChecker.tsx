@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ interface SecurityCheckerProps {
   audioUrl?: string;
   transcript?: string;
   platform?: 'tiktok' | 'youtube' | 'instagram' | 'twitter';
+  existingResults?: SecurityCheckResults | null;
   onCheckComplete?: (results: SecurityCheckResults) => void;
 }
 
@@ -39,10 +40,18 @@ export const SecurityChecker = ({
   audioUrl,
   transcript,
   platform = 'tiktok',
+  existingResults,
   onCheckComplete 
 }: SecurityCheckerProps) => {
   const [isChecking, setIsChecking] = useState(false);
-  const [results, setResults] = useState<SecurityCheckResults | null>(null);
+  const [results, setResults] = useState<SecurityCheckResults | null>(existingResults || null);
+
+  // Sync with existing results
+  useEffect(() => {
+    if (existingResults && !results) {
+      setResults(existingResults);
+    }
+  }, [existingResults]);
 
   const checkCopyright = async () => {
     if (!audioTitle && !audioArtist && !audioUrl) {

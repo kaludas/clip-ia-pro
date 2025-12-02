@@ -72,32 +72,52 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
         throw new Error("La vidéo est vide");
       }
 
-      // Convert blob to base64 using Promise wrapper
+      // Check file size limit (100MB for video transcription)
+      const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+      if (blob.size > MAX_SIZE) {
+        toast.error("La vidéo est trop volumineuse pour la transcription automatique. Veuillez importer le fichier audio séparément (section ci-dessous, max 25MB).");
+        setIsProcessing(false);
+        return;
+      }
+
+      // Convert blob to base64 using Promise wrapper with better error handling
       const base64Audio = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         
         reader.onload = () => {
-          const result = reader.result as string;
-          if (!result) {
-            reject(new Error("Échec de la lecture du fichier"));
-            return;
+          try {
+            const result = reader.result as string;
+            if (!result) {
+              reject(new Error("Échec de la lecture du fichier"));
+              return;
+            }
+            
+            // Extract base64 data (remove data:mime;base64, prefix)
+            const base64Data = result.split(',')[1];
+            
+            if (!base64Data || base64Data.length === 0) {
+              reject(new Error("Données base64 vides"));
+              return;
+            }
+            
+            console.log('Base64 data length:', base64Data.length);
+            resolve(base64Data);
+          } catch (err) {
+            reject(new Error("Erreur lors du traitement des données"));
           }
-          
-          // Extract base64 data (remove data:mime;base64, prefix)
-          const base64Data = result.split(',')[1];
-          
-          if (!base64Data || base64Data.length === 0) {
-            reject(new Error("Données base64 vides"));
-            return;
-          }
-          
-          console.log('Base64 data length:', base64Data.length);
-          resolve(base64Data);
         };
         
         reader.onerror = () => {
           reject(new Error("Erreur lors de la lecture de la vidéo"));
         };
+        
+        // Set a timeout for large files
+        const timeout = setTimeout(() => {
+          reader.abort();
+          reject(new Error("Temps de lecture dépassé - fichier trop volumineux"));
+        }, 30000); // 30 seconds timeout
+
+        reader.onloadend = () => clearTimeout(timeout);
         
         reader.readAsDataURL(blob);
       });
