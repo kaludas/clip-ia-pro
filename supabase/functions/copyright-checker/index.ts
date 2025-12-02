@@ -28,14 +28,16 @@ Title: ${audioTitle || 'Unknown'}
 Artist: ${audioArtist || 'Unknown'}
 URL: ${audioUrl || 'Not provided'}
 
-Provide a copyright risk assessment with:
-1. risk_level: "safe", "low", "medium", "high", "critical"
-2. is_copyrighted: boolean
-3. can_use: boolean (if it's safe to use on social media)
-4. platforms: which platforms allow it (tiktok, youtube, instagram)
-5. recommendation: what the user should do
-6. alternative_suggestions: suggest 2-3 similar copyright-free alternatives
-7. confidence: your confidence level (0-100)
+You MUST respond with a valid JSON object (no markdown, no code blocks) with this exact structure:
+{
+  "risk_level": "safe" | "low" | "medium" | "high" | "critical",
+  "is_copyrighted": boolean,
+  "can_use": boolean,
+  "platforms": ["tiktok", "youtube", "instagram", "twitter"],
+  "recommendation": "string explaining what to do",
+  "alternative_suggestions": ["suggestion1", "suggestion2", "suggestion3"],
+  "confidence": number between 0-100
+}
 
 Consider:
 - DMCA databases
@@ -55,44 +57,10 @@ Consider:
         messages: [
           { 
             role: 'system', 
-            content: 'You are a copyright expert specializing in music licensing for social media. Provide accurate, actionable advice.' 
+            content: 'You are a copyright expert. Always respond with valid JSON only, no markdown formatting.' 
           },
           { role: 'user', content: prompt }
-        ],
-        tools: [{
-          type: 'function',
-          function: {
-            name: 'copyright_assessment',
-            description: 'Assess copyright risk for audio content',
-            parameters: {
-              type: 'object',
-              properties: {
-                risk_level: { 
-                  type: 'string', 
-                  enum: ['safe', 'low', 'medium', 'high', 'critical'] 
-                },
-                is_copyrighted: { type: 'boolean' },
-                can_use: { type: 'boolean' },
-                platforms: { 
-                  type: 'array', 
-                  items: { 
-                    type: 'string',
-                    enum: ['tiktok', 'youtube', 'instagram', 'twitter'] 
-                  } 
-                },
-                recommendation: { type: 'string' },
-                alternative_suggestions: { 
-                  type: 'array',
-                  items: { type: 'string' }
-                },
-                confidence: { type: 'number', minimum: 0, maximum: 100 }
-              },
-              required: ['risk_level', 'is_copyrighted', 'can_use', 'recommendation', 'confidence'],
-              additionalProperties: false
-            }
-          }
-        }],
-        tool_choice: { type: 'function', function: { name: 'copyright_assessment' } }
+        ]
       }),
     });
 
@@ -121,13 +89,15 @@ Consider:
     const data = await response.json();
     console.log('AI response received');
     
-    const toolCall = data.choices[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
-      throw new Error('No tool call in response');
+    let content = data.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('No content in AI response');
     }
 
-    const assessment = JSON.parse(toolCall.function.arguments);
+    // Remove markdown code blocks if present
+    content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     
+    const assessment = JSON.parse(content);
     console.log('Copyright assessment:', assessment);
 
     return new Response(
