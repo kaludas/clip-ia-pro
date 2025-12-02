@@ -34,6 +34,8 @@ interface VideoSegment {
   duration: number;
 }
 
+const SNAP_THRESHOLD = 0.5; // seconds - magnetic snapping distance
+
 interface UnifiedTimelineProps {
   currentTime: number;
   duration: number;
@@ -56,6 +58,8 @@ interface UnifiedTimelineProps {
   onLayerRemove: (id: string) => void;
   onLayerTimeChange: (id: string, startTime: number, duration: number) => void;
   onVideoSplit: (time: number) => void;
+  onVideoSegmentRemove: (id: string) => void;
+  onVideoSegmentTimeChange: (id: string, startTime: number, duration: number) => void;
 }
 
 export const UnifiedTimeline = ({
@@ -79,16 +83,41 @@ export const UnifiedTimeline = ({
   onLayerToggle,
   onLayerRemove,
   onLayerTimeChange,
-  onVideoSplit
+  onVideoSplit,
+  onVideoSegmentRemove,
+  onVideoSegmentTimeChange
 }: UnifiedTimelineProps) => {
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isTrimming, setIsTrimming] = useState<'start' | 'end' | null>(null);
-  const [isDragging, setIsDragging] = useState<{ type: 'audio' | 'layer' | 'audio-edge' | 'layer-edge', id: string, edge?: 'start' | 'end' } | null>(null);
+  const [isDragging, setIsDragging] = useState<{ type: 'audio' | 'layer' | 'audio-edge' | 'layer-edge' | 'segment' | 'segment-edge', id: string, edge?: 'start' | 'end' } | null>(null);
+  const [timelineZoom, setTimelineZoom] = useState(1); // 1 = normal, 2 = 2x zoom, etc.
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Magnetic snapping helper
+  const applySnapping = (targetTime: number): number => {
+    const snapPoints: number[] = [
+      trimStart,
+      trimEnd,
+      ...audioTracks.map(t => t.startTime),
+      ...audioTracks.map(t => t.startTime + t.duration),
+      ...layers.map(l => l.startTime),
+      ...layers.map(l => l.startTime + l.duration),
+      ...videoSegments.map(s => s.startTime),
+      ...videoSegments.map(s => s.startTime + s.duration),
+    ];
+
+    for (const snapPoint of snapPoints) {
+      if (Math.abs(targetTime - snapPoint) < SNAP_THRESHOLD) {
+        return snapPoint;
+      }
+    }
+
+    return targetTime;
   };
 
   const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -128,14 +157,23 @@ export const UnifiedTimeline = ({
         if (isDragging.type === 'audio') {
           const track = audioTracks.find(t => t.id === isDragging.id);
           if (track) {
-            const clampedTime = Math.max(0, Math.min(duration - track.duration, newTime));
+            const snappedTime = applySnapping(newTime);
+            const clampedTime = Math.max(0, Math.min(duration - track.duration, snappedTime));
             onAudioTimeChange(isDragging.id, clampedTime, track.duration);
           }
         } else if (isDragging.type === 'layer') {
           const layer = layers.find(l => l.id === isDragging.id);
           if (layer) {
-            const clampedTime = Math.max(0, Math.min(duration - layer.duration, newTime));
+            const snappedTime = applySnapping(newTime);
+            const clampedTime = Math.max(0, Math.min(duration - layer.duration, snappedTime));
             onLayerTimeChange(isDragging.id, clampedTime, layer.duration);
+          }
+        } else if (isDragging.type === 'segment') {
+          const segment = videoSegments.find(s => s.id === isDragging.id);
+          if (segment) {
+            const snappedTime = applySnapping(newTime);
+            const clampedTime = Math.max(0, Math.min(duration - segment.duration, snappedTime));
+            onVideoSegmentTimeChange(isDragging.id, clampedTime, segment.duration);
           }
         } else if (isDragging.type === 'audio-edge') {
           const track = audioTracks.find(t => t.id === isDragging.id);
@@ -156,13 +194,31 @@ export const UnifiedTimeline = ({
           if (layer) {
             if (isDragging.edge === 'start') {
               const maxStart = layer.startTime + layer.duration - 0.5;
-              const newStart = Math.max(0, Math.min(maxStart, newTime));
+              const snappedTime = applySnapping(newTime);
+              const newStart = Math.max(0, Math.min(maxStart, snappedTime));
               const newDuration = layer.duration + (layer.startTime - newStart);
               onLayerTimeChange(isDragging.id, newStart, newDuration);
             } else {
               const minDuration = 0.5;
-              const newDuration = Math.max(minDuration, newTime - layer.startTime);
+              const snappedTime = applySnapping(newTime);
+              const newDuration = Math.max(minDuration, snappedTime - layer.startTime);
               onLayerTimeChange(isDragging.id, layer.startTime, newDuration);
+            }
+          }
+        } else if (isDragging.type === 'segment-edge') {
+          const segment = videoSegments.find(s => s.id === isDragging.id);
+          if (segment) {
+            if (isDragging.edge === 'start') {
+              const maxStart = segment.startTime + segment.duration - 0.5;
+              const snappedTime = applySnapping(newTime);
+              const newStart = Math.max(0, Math.min(maxStart, snappedTime));
+              const newDuration = segment.duration + (segment.startTime - newStart);
+              onVideoSegmentTimeChange(isDragging.id, newStart, newDuration);
+            } else {
+              const minDuration = 0.5;
+              const snappedTime = applySnapping(newTime);
+              const newDuration = Math.max(minDuration, snappedTime - segment.startTime);
+              onVideoSegmentTimeChange(isDragging.id, segment.startTime, newDuration);
             }
           }
         }
@@ -181,7 +237,23 @@ export const UnifiedTimeline = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isTrimming, isDragging, duration, trimStart, trimEnd, audioTracks, layers, onTrimChange, onAudioTimeChange, onLayerTimeChange]);
+  }, [isTrimming, isDragging, duration, trimStart, trimEnd, audioTracks, layers, videoSegments, onTrimChange, onAudioTimeChange, onLayerTimeChange, onVideoSegmentTimeChange]);
+
+  // Keyboard shortcut for split
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        onVideoSplit(currentTime);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [currentTime, onVideoSplit]);
 
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
   const trimStartPercentage = duration > 0 ? (trimStart / duration) * 100 : 0;
@@ -238,6 +310,31 @@ export const UnifiedTimeline = ({
 
         <div className="flex-1" />
 
+        {/* Timeline Zoom Controls */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8"
+            onClick={() => setTimelineZoom(Math.max(0.5, timelineZoom - 0.25))}
+            title="Dézoomer (Ctrl+-)"
+          >
+            −
+          </Button>
+          <span className="text-xs text-muted-foreground w-12 text-center">
+            {Math.round(timelineZoom * 100)}%
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8"
+            onClick={() => setTimelineZoom(Math.min(4, timelineZoom + 0.25))}
+            title="Zoomer (Ctrl++)"
+          >
+            +
+          </Button>
+        </div>
+
         {/* Volume Control */}
         <div className="flex items-center gap-2">
           <Volume2 className="w-4 h-4 text-muted-foreground" />
@@ -263,6 +360,11 @@ export const UnifiedTimeline = ({
             <span className="text-[10px]">
               Début: {formatTime(trimStart)} • Durée: {formatTime(trimEnd - trimStart)} • Fin: {formatTime(trimEnd)}
             </span>
+            {videoSegments.length > 0 && (
+              <span className="text-[10px] text-accent">
+                {videoSegments.length} segments
+              </span>
+            )}
           </div>
           <div
             ref={timelineRef}
@@ -287,6 +389,65 @@ export const UnifiedTimeline = ({
                 width: `${trimEndPercentage - trimStartPercentage}%`
               }}
             />
+
+            {/* Video Segments (if split) */}
+            {videoSegments.map((segment, index) => {
+              const segStartPercentage = duration > 0 ? (segment.startTime / duration) * 100 : 0;
+              const segWidthPercentage = duration > 0 ? (segment.duration / duration) * 100 : 0;
+              
+              return (
+                <div
+                  key={segment.id}
+                  className="absolute inset-y-0 bg-accent/40 border-l-2 border-r-2 border-accent rounded cursor-move group/segment hover:bg-accent/50 transition-all"
+                  style={{
+                    left: `${segStartPercentage}%`,
+                    width: `${segWidthPercentage}%`
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const isNearStart = mouseX < 10;
+                    const isNearEnd = mouseX > rect.width - 10;
+                    
+                    if (isNearStart) {
+                      setIsDragging({ type: 'segment-edge', id: segment.id, edge: 'start' });
+                    } else if (isNearEnd) {
+                      setIsDragging({ type: 'segment-edge', id: segment.id, edge: 'end' });
+                    } else {
+                      setIsDragging({ type: 'segment', id: segment.id });
+                    }
+                  }}
+                >
+                  {/* Start edge handle */}
+                  <div className="absolute left-0 inset-y-0 w-2 bg-accent cursor-ew-resize opacity-0 group-hover/segment:opacity-100 transition-opacity">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-6 bg-background rounded-full" />
+                  </div>
+                  
+                  <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-accent-foreground pointer-events-none">
+                    Seg {index + 1}
+                  </div>
+                  
+                  {/* End edge handle */}
+                  <div className="absolute right-0 inset-y-0 w-2 bg-accent cursor-ew-resize opacity-0 group-hover/segment:opacity-100 transition-opacity">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-6 bg-background rounded-full" />
+                  </div>
+                  
+                  {/* Remove button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive/90 hover:bg-destructive opacity-0 group-hover/segment:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onVideoSegmentRemove(segment.id);
+                    }}
+                  >
+                    <X className="w-2.5 h-2.5 text-destructive-foreground" />
+                  </Button>
+                </div>
+              );
+            })}
 
             {/* Progress bar */}
             <div
