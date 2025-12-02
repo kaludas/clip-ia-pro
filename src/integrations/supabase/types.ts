@@ -14,7 +14,243 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      content_warnings: {
+        Row: {
+          ai_confidence: number | null
+          created_at: string
+          description: string
+          details: Json | null
+          id: string
+          project_id: string
+          severity: string | null
+          warning_type: Database["public"]["Enums"]["content_warning_type"]
+        }
+        Insert: {
+          ai_confidence?: number | null
+          created_at?: string
+          description: string
+          details?: Json | null
+          id?: string
+          project_id: string
+          severity?: string | null
+          warning_type: Database["public"]["Enums"]["content_warning_type"]
+        }
+        Update: {
+          ai_confidence?: number | null
+          created_at?: string
+          description?: string
+          details?: Json | null
+          id?: string
+          project_id?: string
+          severity?: string | null
+          warning_type?: Database["public"]["Enums"]["content_warning_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_warnings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      project_analytics: {
+        Row: {
+          best_performing_segment: Json | null
+          comments: number | null
+          engagement_rate: number | null
+          id: string
+          likes: number | null
+          platform: Database["public"]["Enums"]["platform_type"]
+          project_id: string
+          recorded_at: string
+          retention_rate: number | null
+          shares: number | null
+          views: number | null
+          watch_time_seconds: number | null
+        }
+        Insert: {
+          best_performing_segment?: Json | null
+          comments?: number | null
+          engagement_rate?: number | null
+          id?: string
+          likes?: number | null
+          platform: Database["public"]["Enums"]["platform_type"]
+          project_id: string
+          recorded_at?: string
+          retention_rate?: number | null
+          shares?: number | null
+          views?: number | null
+          watch_time_seconds?: number | null
+        }
+        Update: {
+          best_performing_segment?: Json | null
+          comments?: number | null
+          engagement_rate?: number | null
+          id?: string
+          likes?: number | null
+          platform?: Database["public"]["Enums"]["platform_type"]
+          project_id?: string
+          recorded_at?: string
+          retention_rate?: number | null
+          shares?: number | null
+          views?: number | null
+          watch_time_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_analytics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_collaborators: {
+        Row: {
+          id: string
+          invited_at: string
+          project_id: string
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          invited_at?: string
+          project_id: string
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          invited_at?: string
+          project_id?: string
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_collaborators_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          project_id: string
+          timestamp_seconds: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          project_id: string
+          timestamp_seconds?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          project_id?: string
+          timestamp_seconds?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "project_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration: number | null
+          id: string
+          status: Database["public"]["Enums"]["project_status"] | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration?: number | null
+          id?: string
+          status?: Database["public"]["Enums"]["project_status"] | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration?: number | null
+          id?: string
+          status?: Database["public"]["Enums"]["project_status"] | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +259,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      content_warning_type:
+        | "copyright"
+        | "sensitive_content"
+        | "violence"
+        | "explicit"
+        | "spam"
+      platform_type: "tiktok" | "youtube" | "instagram" | "twitter"
+      project_status: "draft" | "processing" | "published" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +393,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      content_warning_type: [
+        "copyright",
+        "sensitive_content",
+        "violence",
+        "explicit",
+        "spam",
+      ],
+      platform_type: ["tiktok", "youtube", "instagram", "twitter"],
+      project_status: ["draft", "processing", "published", "failed"],
+    },
   },
 } as const
