@@ -17,6 +17,9 @@ import SubtitleGenerator from "./editor/SubtitleGenerator";
 import SubtitleTranslator from "./editor/SubtitleTranslator";
 import SocialMediaPublisher from "./editor/SocialMediaPublisher";
 import { SecurityChecker } from "./security/SecurityChecker";
+import { ProductRecognition } from "./editor/ProductRecognition";
+import { ContentSafety } from "./editor/ContentSafety";
+import { ViralityScore } from "./editor/ViralityScore";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,7 +40,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
   const [volume, setVolume] = useState(100);
-  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration" | "subtitles" | "translate" | "publish" | "security">("viral");
+  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration" | "subtitles" | "translate" | "publish" | "security" | "products" | "safety" | "virality">("viral");
   
   // Subtitles state
   const [generatedSubtitles, setGeneratedSubtitles] = useState<Array<{
@@ -491,11 +494,36 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   📤
                 </Button>
                 <Button
+                  variant={activePanel === "products" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("products")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                  title="Reconnaissance produits"
+                >
+                  📦
+                </Button>
+                <Button
+                  variant={activePanel === "safety" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("safety")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                  title="Modération contenu"
+                >
+                  🛡️
+                </Button>
+                <Button
+                  variant={activePanel === "virality" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("virality")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                  title="Score viralité"
+                >
+                  🎯
+                </Button>
+                <Button
                   variant={activePanel === "security" ? "hero" : "ghost"}
                   onClick={() => setActivePanel("security")}
                   className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                  title="Copyright checker"
                 >
-                  🛡️
+                  ©️
                 </Button>
                 <Button
                   variant={activePanel === "export" ? "hero" : "ghost"}
@@ -596,6 +624,18 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               
               {activePanel === "publish" && (
                 <SocialMediaPublisher videoUrl={videoUrl} duration={duration} />
+              )}
+              
+              {activePanel === "products" && (
+                <ProductRecognition videoRef={videoRef} />
+              )}
+              
+              {activePanel === "safety" && (
+                <ContentSafety videoRef={videoRef} />
+              )}
+              
+              {activePanel === "virality" && (
+                <ViralityScore videoRef={videoRef} />
               )}
               
               {activePanel === "security" && (
