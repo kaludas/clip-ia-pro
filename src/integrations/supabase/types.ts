@@ -251,6 +251,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_overlays: {
+        Row: {
+          created_at: string | null
+          duration: number | null
+          file_path: string
+          file_type: string
+          id: string
+          name: string
+          thumbnail_url: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration?: number | null
+          file_path: string
+          file_type: string
+          id?: string
+          name: string
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duration?: number | null
+          file_path?: string
+          file_type?: string
+          id?: string
+          name?: string
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, Save, Sparkles, Download, ChevronLeft } from "lucide-react";
+import { Play, Pause, RotateCcw, Save, Sparkles, Download, ChevronLeft, Volume2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Timeline } from "./editor/Timeline";
+import { ImprovedTimeline } from "./editor/ImprovedTimeline";
 import { EffectsPanel } from "./editor/EffectsPanel";
 import { TextOverlay } from "./editor/TextOverlay";
 import { ExportPanel } from "./editor/ExportPanel";
 import { ViralMomentDetector } from "./ViralMomentDetector";
 import { SpeedControl } from "./editor/SpeedControl";
-import { LayerManager } from "./editor/LayerManager";
+import { LayerManager, Layer } from "./editor/LayerManager";
 import { TitleTemplates } from "./editor/TitleTemplates";
 import { SchedulePanel } from "./editor/SchedulePanel";
 import { AnalyticsDashboard } from "./analytics/AnalyticsDashboard";
@@ -36,6 +36,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   const [duration, setDuration] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
+  const [volume, setVolume] = useState(100);
   const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration" | "subtitles" | "translate" | "publish" | "security">("viral");
   
   // Subtitles state
@@ -65,6 +66,9 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     endTime: number;
   }>>([]);
 
+  // Layers state
+  const [layers, setLayers] = useState<Layer[]>([]);
+
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.addEventListener("loadedmetadata", () => {
@@ -76,8 +80,70 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
       videoRef.current.addEventListener("timeupdate", () => {
         setCurrentTime(videoRef.current?.currentTime || 0);
       });
+
+      // Set initial volume
+      videoRef.current.volume = volume / 100;
     }
-  }, []);
+
+    // Keyboard shortcuts (like CapCut)
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Prevent shortcuts when typing in inputs
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch(e.code) {
+        case 'Space':
+          e.preventDefault();
+          togglePlayPause();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (videoRef.current) {
+            videoRef.current.currentTime = Math.max(
+              trimStart,
+              videoRef.current.currentTime - 5
+            );
+          }
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          if (videoRef.current) {
+            videoRef.current.currentTime = Math.min(
+              trimEnd,
+              videoRef.current.currentTime + 5
+            );
+          }
+          break;
+        case 'KeyI':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            setTrimStart(currentTime);
+            toast.success("Point d'entrée défini");
+          }
+          break;
+        case 'KeyO':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            setTrimEnd(currentTime);
+            toast.success("Point de sortie défini");
+          }
+          break;
+        case 'KeyZ':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            handleReset();
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [currentTime, trimStart, trimEnd, volume]);
 
   // Apply filters to canvas
   useEffect(() => {
@@ -244,34 +310,34 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
           </div>
           
           {/* Playback Controls */}
-          <div className="flex items-center gap-4">
-            <Button
-              variant="hero"
-              size="icon"
-              onClick={togglePlayPause}
-              className="rounded-full"
-            >
-              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-            </Button>
-            
-            <div className="flex-1">
-              <Timeline
-                currentTime={currentTime}
-                duration={duration}
-                trimStart={trimStart}
-                trimEnd={trimEnd}
-                onSeek={handleSeek}
-                onTrimChange={(start, end) => {
-                  setTrimStart(start);
-                  setTrimEnd(end);
-                }}
-              />
-            </div>
-            
-            <div className="text-sm text-muted-foreground">
-              {Math.floor(currentTime)}s / {Math.floor(duration)}s
-            </div>
-          </div>
+          <ImprovedTimeline
+            currentTime={currentTime}
+            duration={duration}
+            isPlaying={isPlaying}
+            volume={volume}
+            trimStart={trimStart}
+            trimEnd={trimEnd}
+            onSeek={handleSeek}
+            onPlayPause={togglePlayPause}
+            onVolumeChange={(vol) => {
+              setVolume(vol);
+              if (videoRef.current) {
+                videoRef.current.volume = vol / 100;
+              }
+            }}
+            onTrimChange={(start, end) => {
+              setTrimStart(start);
+              setTrimEnd(end);
+            }}
+            onSkip={(seconds) => {
+              if (videoRef.current) {
+                videoRef.current.currentTime = Math.max(
+                  trimStart,
+                  Math.min(trimEnd, videoRef.current.currentTime + seconds)
+                );
+              }
+            }}
+          />
         </div>
 
         {/* Editor Panels */}
@@ -433,17 +499,8 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               
               {activePanel === "layers" && (
                 <LayerManager
-                  layers={textOverlays.map(overlay => ({
-                    id: overlay.id,
-                    type: "text" as const,
-                    name: overlay.text,
-                    visible: true,
-                    opacity: 100,
-                    zIndex: 1
-                  }))}
-                  onLayerUpdate={(layers) => {
-                    console.log("Layers updated:", layers);
-                  }}
+                  layers={layers}
+                  onLayerUpdate={setLayers}
                 />
               )}
               
