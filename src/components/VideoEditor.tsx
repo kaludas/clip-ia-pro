@@ -11,8 +11,11 @@ import { SpeedControl } from "./editor/SpeedControl";
 import { LayerManager } from "./editor/LayerManager";
 import { TitleTemplates } from "./editor/TitleTemplates";
 import { SchedulePanel } from "./editor/SchedulePanel";
+import { AnalyticsDashboard } from "./analytics/AnalyticsDashboard";
+import { CollaborationPanel } from "./collaboration/CollaborationPanel";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VideoEditorProps {
   videoUrl?: string;
@@ -29,7 +32,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   const [duration, setDuration] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
-  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule">("viral");
+  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration">("viral");
   
   // Effects state
   const [brightness, setBrightness] = useState(100);
@@ -318,6 +321,20 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   📅
                 </Button>
                 <Button
+                  variant={activePanel === "analytics" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("analytics")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                >
+                  📊
+                </Button>
+                <Button
+                  variant={activePanel === "collaboration" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("collaboration")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                >
+                  👥
+                </Button>
+                <Button
                   variant={activePanel === "export" ? "hero" : "ghost"}
                   onClick={() => setActivePanel("export")}
                   className="flex-1 whitespace-nowrap text-xs sm:text-sm"
@@ -400,6 +417,14 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               )}
               
               {activePanel === "schedule" && <SchedulePanel />}
+              
+              {activePanel === "analytics" && (
+                <AnalyticsDashboard projectId="demo-project-id" />
+              )}
+              
+              {activePanel === "collaboration" && (
+                <CollaborationPanel projectId="demo-project-id" />
+              )}
               
               {activePanel === "export" && (
                 <ExportPanel
