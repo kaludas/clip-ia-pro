@@ -24,14 +24,17 @@ export interface Layer {
   position?: { x: number; y: number };
   scale?: number;
   rotation?: number;
+  startTime: number;
+  duration: number;
 }
 
 interface LayerManagerProps {
   layers: Layer[];
   onLayerUpdate: (layers: Layer[]) => void;
+  videoDuration: number;
 }
 
-export const LayerManager = ({ layers, onLayerUpdate }: LayerManagerProps) => {
+export const LayerManager = ({ layers, onLayerUpdate, videoDuration }: LayerManagerProps) => {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [userOverlays, setUserOverlays] = useState<any[]>([]);
@@ -121,7 +124,9 @@ export const LayerManager = ({ layers, onLayerUpdate }: LayerManagerProps) => {
         url: publicUrl,
         position: { x: 50, y: 50 },
         scale: 1,
-        rotation: 0
+        rotation: 0,
+        startTime: 0,
+        duration: videoDuration
       };
 
       onLayerUpdate([...layers, newLayer]);
@@ -145,7 +150,9 @@ export const LayerManager = ({ layers, onLayerUpdate }: LayerManagerProps) => {
       url: overlay.thumbnail_url,
       position: { x: 50, y: 50 },
       scale: 1,
-      rotation: 0
+      rotation: 0,
+      startTime: 0,
+      duration: videoDuration
     };
 
     onLayerUpdate([...layers, newLayer]);

@@ -420,6 +420,12 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
             }}
             onAudioRemove={(id) => {
               setAudioTracks(audioTracks.filter(track => track.id !== id));
+              toast.success("Piste audio supprimée");
+            }}
+            onAudioTimeChange={(id, startTime, duration) => {
+              setAudioTracks(audioTracks.map(track =>
+                track.id === id ? { ...track, startTime, duration } : track
+              ));
             }}
             onLayerToggle={(id) => {
               setLayers(layers.map(layer =>
@@ -428,6 +434,16 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
             }}
             onLayerRemove={(id) => {
               setLayers(layers.filter(layer => layer.id !== id));
+              toast.success("Calque supprimé");
+            }}
+            onLayerTimeChange={(id, startTime, duration) => {
+              setLayers(layers.map(layer =>
+                layer.id === id ? { ...layer, startTime, duration } : layer
+              ));
+            }}
+            onVideoSplit={(time) => {
+              toast.success(`Vidéo coupée à ${Math.floor(time)}s`);
+              // La logique de split sera implémentée dans une prochaine mise à jour
             }}
           />
         </div>
@@ -642,6 +658,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                 <LayerManager
                   layers={layers}
                   onLayerUpdate={setLayers}
+                  videoDuration={duration}
                 />
               )}
               
