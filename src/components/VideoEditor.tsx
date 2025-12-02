@@ -103,6 +103,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
 
   // Layers state
   const [layers, setLayers] = useState<Layer[]>([]);
+  const [layerImages, setLayerImages] = useState<Record<string, HTMLImageElement>>({});
   
   // Speed segments state
   const [speedSegments, setSpeedSegments] = useState<Array<{
@@ -204,6 +205,20 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     };
   }, [currentTime, trimStart, trimEnd, volume]);
 
+  // Preload layer images
+  useEffect(() => {
+    layers.forEach(layer => {
+      if (layer.url && layer.type !== 'text' && !layerImages[layer.id]) {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          setLayerImages(prev => ({ ...prev, [layer.id]: img }));
+        };
+        img.src = layer.url;
+      }
+    });
+  }, [layers]);
+
   // Apply filters to canvas
   useEffect(() => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -245,14 +260,33 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
       
       // Draw layer overlays (filters/images uploaded by user)
       layers
-        .filter(layer => layer.visible)
+        .filter(layer => layer.visible && currentTime >= layer.startTime && currentTime < layer.startTime + layer.duration)
         .sort((a, b) => a.zIndex - b.zIndex)
         .forEach(layer => {
-          if (layer.url) {
+          if (layer.url && layerImages[layer.id]) {
             ctx.filter = "none";
             ctx.globalAlpha = layer.opacity / 100;
-            // Note: For full implementation, we'd need to preload images
-            // This is a placeholder showing where layers would be rendered
+            
+            const img = layerImages[layer.id];
+            const position = layer.position || { x: 50, y: 50 };
+            const scale = layer.scale || 1;
+            
+            // Calculate actual position on canvas (percentage to pixels)
+            const x = (position.x / 100) * canvas.width;
+            const y = (position.y / 100) * canvas.height;
+            
+            // Calculate scaled dimensions
+            const imgWidth = img.width * scale;
+            const imgHeight = img.height * scale;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            if (layer.rotation) {
+              ctx.rotate((layer.rotation * Math.PI) / 180);
+            }
+            ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
+            ctx.restore();
+            
             ctx.globalAlpha = 1;
           }
         });
@@ -313,7 +347,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     };
     
     updateCanvas();
-  }, [brightness, contrast, saturation, blur, selectedFilter, textOverlays, currentTime, layers, generatedSubtitles]);
+  }, [brightness, contrast, saturation, blur, selectedFilter, textOverlays, currentTime, layers, generatedSubtitles, layerImages]);
   
   // Apply speed control based on current time
   useEffect(() => {
