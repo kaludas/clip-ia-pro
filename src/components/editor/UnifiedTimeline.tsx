@@ -65,6 +65,7 @@ interface UnifiedTimelineProps {
   layers: Layer[];
   textOverlays: TextOverlay[];
   subtitles: Subtitle[];
+  translatedSubtitles?: Record<string, Subtitle[]>;
   videoSegments?: VideoSegment[];
   onSeek: (time: number) => void;
   onPlayPause: () => void;
@@ -95,6 +96,7 @@ export const UnifiedTimeline = ({
   layers,
   textOverlays,
   subtitles,
+  translatedSubtitles = {},
   videoSegments = [],
   onSeek,
   onPlayPause,
@@ -805,7 +807,7 @@ export const UnifiedTimeline = ({
         {subtitles.length > 0 && (
           <div>
             <div className="text-xs text-muted-foreground mb-1 flex items-center gap-2">
-              <span className="font-medium">📝 Sous-titres</span>
+              <span className="font-medium">📝 Sous-titres originaux</span>
               <span className="text-[10px]">{subtitles.length} segments</span>
             </div>
             <div className="relative h-12 bg-muted/20 rounded-lg overflow-hidden">
@@ -827,6 +829,58 @@ export const UnifiedTimeline = ({
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Translated Subtitles Tracks */}
+        {Object.keys(translatedSubtitles).length > 0 && (
+          <div className="space-y-2">
+            {Object.entries(translatedSubtitles).map(([langCode, subs]) => {
+              const LANGUAGE_NAMES: Record<string, { name: string; flag: string }> = {
+                fr: { name: 'Français', flag: '🇫🇷' },
+                es: { name: 'Espagnol', flag: '🇪🇸' },
+                de: { name: 'Allemand', flag: '🇩🇪' },
+                it: { name: 'Italien', flag: '🇮🇹' },
+                pt: { name: 'Portugais', flag: '🇵🇹' },
+                ja: { name: 'Japonais', flag: '🇯🇵' },
+                ko: { name: 'Coréen', flag: '🇰🇷' },
+                zh: { name: 'Chinois', flag: '🇨🇳' },
+                ar: { name: 'Arabe', flag: '🇸🇦' },
+                ru: { name: 'Russe', flag: '🇷🇺' },
+                hi: { name: 'Hindi', flag: '🇮🇳' },
+                en: { name: 'Anglais', flag: '🇬🇧' },
+              };
+              
+              const lang = LANGUAGE_NAMES[langCode] || { name: langCode, flag: '🌐' };
+              
+              return (
+                <div key={langCode}>
+                  <div className="text-xs text-muted-foreground mb-1 flex items-center gap-2">
+                    <span className="font-medium">{lang.flag} Sous-titres {lang.name}</span>
+                    <span className="text-[10px]">{subs.length} segments</span>
+                  </div>
+                  <div className="relative h-12 bg-muted/20 rounded-lg overflow-hidden">
+                    {subs.map((subtitle, index) => {
+                      const subStartPercentage = duration > 0 ? (subtitle.start / duration) * 100 : 0;
+                      const subDuration = subtitle.end - subtitle.start;
+                      const subWidthPercentage = duration > 0 ? (subDuration / duration) * 100 : 0;
+                      
+                      return (
+                        <div
+                          key={index}
+                          className="absolute inset-y-0 bg-blue-500/30 border border-blue-500/50 rounded-sm"
+                          style={{
+                            left: `${subStartPercentage}%`,
+                            width: `${subWidthPercentage}%`
+                          }}
+                          title={subtitle.text}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

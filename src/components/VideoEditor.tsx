@@ -52,6 +52,13 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     text: string;
   }>>([]);
   
+  // Translated subtitles state (multiple languages)
+  const [translatedSubtitles, setTranslatedSubtitles] = useState<Record<string, Array<{
+    start: number;
+    end: number;
+    text: string;
+  }>>>({});
+  
   // Effects state
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
@@ -585,6 +592,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               videoSegments={videoSegments}
               textOverlays={textOverlays}
               subtitles={generatedSubtitles}
+              translatedSubtitles={translatedSubtitles}
               onTextOverlayRemove={(id) => {
                 setTextOverlays(textOverlays.filter(text => text.id !== id));
                 toast.success("Texte supprimé");
@@ -955,6 +963,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   </Button>
                 </div>
                 <SubtitleGenerator 
+                  videoUrl={videoUrl}
                   onSubtitlesGenerated={(segments) => {
                     setGeneratedSubtitles(segments);
                     console.log("Subtitles generated:", segments);
@@ -975,7 +984,14 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Retour
                 </Button>
-                <SubtitleTranslator subtitles={generatedSubtitles} />
+                <SubtitleTranslator 
+                  subtitles={generatedSubtitles}
+                  onTranslationsGenerated={(translations) => {
+                    setTranslatedSubtitles(translations);
+                    console.log("Translations generated:", translations);
+                    toast.success("Traductions générées avec succès !");
+                  }}
+                />
               </div>
             )}
 
