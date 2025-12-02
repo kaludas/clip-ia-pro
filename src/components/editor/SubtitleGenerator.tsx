@@ -34,51 +34,84 @@ const SubtitleGenerator = ({ videoUrl, onSubtitlesGenerated }: SubtitleGenerator
 
     try {
       // Fetch video and convert to base64
+      console.log('Fetching video from:', videoUrl);
       const response = await fetch(videoUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch video: ${response.status}`);
+      }
+      
       const blob = await response.blob();
+      console.log('Blob size:', blob.size, 'type:', blob.type);
       
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      
-      reader.onload = async () => {
-        const base64Audio = (reader.result as string).split(',')[1];
-        const format = blob.type.split('/')[1] || 'mp4';
+      if (blob.size === 0) {
+        throw new Error("La vidéo est vide");
+      }
 
-        // Call the edge function
-        const { data, error } = await supabase.functions.invoke('audio-transcription', {
-          body: { 
-            audio: base64Audio,
-            language: 'fr',
-            format
+      // Convert blob to base64 using Promise wrapper
+      const base64Audio = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = () => {
+          const result = reader.result as string;
+          if (!result) {
+            reject(new Error("Échec de la lecture du fichier"));
+            return;
           }
-        });
+          
+          // Extract base64 data (remove data:mime;base64, prefix)
+          const base64Data = result.split(',')[1];
+          
+          if (!base64Data || base64Data.length === 0) {
+            reject(new Error("Données base64 vides"));
+            return;
+          }
+          
+          console.log('Base64 data length:', base64Data.length);
+          resolve(base64Data);
+        };
+        
+        reader.onerror = () => {
+          reject(new Error("Erreur lors de la lecture de la vidéo"));
+        };
+        
+        reader.readAsDataURL(blob);
+      });
 
-        if (error) {
-          console.error('Transcription error:', error);
-          throw error;
+      const format = blob.type.split('/')[1] || 'mp4';
+      console.log('Sending transcription request with format:', format);
+
+      // Call the edge function
+      const { data, error } = await supabase.functions.invoke('audio-transcription', {
+        body: { 
+          audio: base64Audio,
+          language: 'fr',
+          format
         }
+      });
 
-        console.log('Transcription result:', data);
+      if (error) {
+        console.error('Transcription error:', error);
+        throw error;
+      }
 
-        setTranscription({
-          text: data.text,
-          segments: data.segments || []
-        });
+      console.log('Transcription result:', data);
 
-        if (onSubtitlesGenerated) {
-          onSubtitlesGenerated(data.segments || []);
-        }
+      setTranscription({
+        text: data.text,
+        segments: data.segments || []
+      });
 
-        toast.success("Sous-titres générés avec succès !");
-      };
+      if (onSubtitlesGenerated) {
+        onSubtitlesGenerated(data.segments || []);
+      }
 
-      reader.onerror = () => {
-        throw new Error("Erreur lors de la lecture de la vidéo");
-      };
+      toast.success("Sous-titres générés avec succès !");
 
     } catch (error) {
       console.error('Error generating subtitles:', error);
-      toast.error("Erreur lors de la génération des sous-titres");
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de la génération des sous-titres";
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
