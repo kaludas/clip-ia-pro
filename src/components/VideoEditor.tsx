@@ -13,6 +13,7 @@ import { TitleTemplates } from "./editor/TitleTemplates";
 import { SchedulePanel } from "./editor/SchedulePanel";
 import { AnalyticsDashboard } from "./analytics/AnalyticsDashboard";
 import { CollaborationPanel } from "./collaboration/CollaborationPanel";
+import SubtitleGenerator from "./editor/SubtitleGenerator";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +33,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   const [duration, setDuration] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
-  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration">("viral");
+  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration" | "subtitles">("viral");
   
   // Effects state
   const [brightness, setBrightness] = useState(100);
@@ -335,6 +336,13 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   👥
                 </Button>
                 <Button
+                  variant={activePanel === "subtitles" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("subtitles")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                >
+                  CC
+                </Button>
+                <Button
                   variant={activePanel === "export" ? "hero" : "ghost"}
                   onClick={() => setActivePanel("export")}
                   className="flex-1 whitespace-nowrap text-xs sm:text-sm"
@@ -424,6 +432,15 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               
               {activePanel === "collaboration" && (
                 <CollaborationPanel projectId="demo-project-id" />
+              )}
+              
+              {activePanel === "subtitles" && (
+                <SubtitleGenerator 
+                  onSubtitlesGenerated={(segments) => {
+                    console.log("Subtitles generated:", segments);
+                    toast.success(`${segments.length} segments générés !`);
+                  }}
+                />
               )}
               
               {activePanel === "export" && (
