@@ -12,15 +12,77 @@ interface Segment {
 }
 
 interface SubtitleGeneratorProps {
+  videoUrl?: string;
   onSubtitlesGenerated?: (segments: Segment[]) => void;
 }
 
-const SubtitleGenerator = ({ onSubtitlesGenerated }: SubtitleGeneratorProps) => {
+const SubtitleGenerator = ({ videoUrl, onSubtitlesGenerated }: SubtitleGeneratorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcription, setTranscription] = useState<{
     text: string;
     segments: Segment[];
   } | null>(null);
+
+  const handleGenerateFromVideo = async () => {
+    if (!videoUrl) {
+      toast.error("Aucune vidéo chargée");
+      return;
+    }
+
+    setIsProcessing(true);
+    toast.info("Transcription de la vidéo en cours...");
+
+    try {
+      // Fetch video and convert to base64
+      const response = await fetch(videoUrl);
+      const blob = await response.blob();
+      
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      
+      reader.onload = async () => {
+        const base64Audio = (reader.result as string).split(',')[1];
+        const format = blob.type.split('/')[1] || 'mp4';
+
+        // Call the edge function
+        const { data, error } = await supabase.functions.invoke('audio-transcription', {
+          body: { 
+            audio: base64Audio,
+            language: 'fr',
+            format
+          }
+        });
+
+        if (error) {
+          console.error('Transcription error:', error);
+          throw error;
+        }
+
+        console.log('Transcription result:', data);
+
+        setTranscription({
+          text: data.text,
+          segments: data.segments || []
+        });
+
+        if (onSubtitlesGenerated) {
+          onSubtitlesGenerated(data.segments || []);
+        }
+
+        toast.success("Sous-titres générés avec succès !");
+      };
+
+      reader.onerror = () => {
+        throw new Error("Erreur lors de la lecture de la vidéo");
+      };
+
+    } catch (error) {
+      console.error('Error generating subtitles:', error);
+      toast.error("Erreur lors de la génération des sous-titres");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -110,12 +172,35 @@ const SubtitleGenerator = ({ onSubtitlesGenerated }: SubtitleGeneratorProps) => 
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {videoUrl && (
+          <Button
+            onClick={handleGenerateFromVideo}
+            disabled={isProcessing}
+            className="w-full"
+            size="lg"
+          >
+            <Subtitles className="w-5 h-5 mr-2" />
+            Générer les sous-titres de la vidéo
+          </Button>
+        )}
+        
+        {videoUrl && (
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">ou</span>
+            </div>
+          </div>
+        )}
+
         <div>
           <label htmlFor="audio-upload" className="cursor-pointer">
             <div className="glass-hover p-8 rounded-xl border-2 border-dashed border-border hover:border-primary transition-all text-center">
               <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-sm text-muted-foreground mb-2">
-                Cliquez pour importer un fichier audio/vidéo
+                {videoUrl ? "Importer un fichier audio/vidéo séparé" : "Cliquez pour importer un fichier audio/vidéo"}
               </p>
               <p className="text-xs text-muted-foreground">
                 MP3, WAV, M4A, MP4, WebM (max 25MB)

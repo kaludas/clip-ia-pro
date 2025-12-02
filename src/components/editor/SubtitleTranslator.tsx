@@ -16,6 +16,7 @@ interface Subtitle {
 
 interface SubtitleTranslatorProps {
   subtitles: Subtitle[];
+  onTranslationsGenerated?: (translations: Record<string, Subtitle[]>) => void;
 }
 
 const AVAILABLE_LANGUAGES = [
@@ -33,7 +34,7 @@ const AVAILABLE_LANGUAGES = [
   { code: 'en', name: 'Anglais', flag: '🇬🇧' },
 ];
 
-export default function SubtitleTranslator({ subtitles }: SubtitleTranslatorProps) {
+export default function SubtitleTranslator({ subtitles, onTranslationsGenerated }: SubtitleTranslatorProps) {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [translating, setTranslating] = useState(false);
   const [translations, setTranslations] = useState<Record<string, Subtitle[]>>({});
@@ -70,6 +71,9 @@ export default function SubtitleTranslator({ subtitles }: SubtitleTranslatorProp
       if (error) throw error;
 
       setTranslations(data.translations);
+      if (onTranslationsGenerated) {
+        onTranslationsGenerated(data.translations);
+      }
       toast.success(`Sous-titres traduits en ${selectedLanguages.length} langue(s) !`);
     } catch (error: any) {
       console.error('Translation error:', error);
