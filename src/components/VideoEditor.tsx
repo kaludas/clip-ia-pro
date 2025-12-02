@@ -674,12 +674,13 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   </Button>
                 </div>
                 <div className="mt-6">
-                  <ViralMomentDetector 
-                    videoRef={videoRef}
-                    onMomentSelect={handleMomentSelect}
-                    existingMoments={viralMoments}
-                    onMomentsUpdate={setViralMoments}
-                  />
+              <ViralMomentDetector 
+                videoRef={videoRef}
+                onMomentSelect={handleMomentSelect}
+                existingMoments={viralMoments}
+                onMomentsUpdate={setViralMoments}
+                translatedSubtitles={translatedSubtitles}
+              />
                 </div>
               </div>
             )}

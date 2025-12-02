@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import { Sparkles, Play, Scissors, TrendingUp, Clock, Tag, Filter, X } from "lucide-react";
+import { Sparkles, Play, Scissors, TrendingUp, Clock, Tag, Filter, X, Languages, Download } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,14 +19,21 @@ interface ViralMoment {
   tags: string[];
 }
 
+interface Subtitle {
+  start: number;
+  end: number;
+  text: string;
+}
+
 interface ViralMomentDetectorProps {
   videoRef: React.RefObject<HTMLVideoElement>;
   onMomentSelect: (start: number, end: number) => void;
   existingMoments?: ViralMoment[];
   onMomentsUpdate?: (moments: ViralMoment[]) => void;
+  translatedSubtitles?: Record<string, Subtitle[]>;
 }
 
-export const ViralMomentDetector = ({ videoRef, onMomentSelect, existingMoments = [], onMomentsUpdate }: ViralMomentDetectorProps) => {
+export const ViralMomentDetector = ({ videoRef, onMomentSelect, existingMoments = [], onMomentsUpdate, translatedSubtitles = {} }: ViralMomentDetectorProps) => {
   const { t, language } = useLanguage();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [moments, setMoments] = useState<ViralMoment[]>(existingMoments);
@@ -159,6 +166,71 @@ export const ViralMomentDetector = ({ videoRef, onMomentSelect, existingMoments 
     setMinDuration(0);
     setMaxDuration(120);
     setSelectedTags([]);
+  };
+
+  // Filter subtitles for a specific moment
+  const getSubtitlesForMoment = (langCode: string, momentStart: number, momentEnd: number): Subtitle[] => {
+    const subs = translatedSubtitles[langCode] || [];
+    return subs.filter(sub => {
+      // Include subtitle if it overlaps with the moment
+      return (sub.start >= momentStart && sub.start < momentEnd) ||
+             (sub.end > momentStart && sub.end <= momentEnd) ||
+             (sub.start < momentStart && sub.end > momentEnd);
+    }).map(sub => ({
+      // Adjust timestamps relative to moment start
+      start: Math.max(sub.start - momentStart, 0),
+      end: Math.min(sub.end - momentStart, momentEnd - momentStart),
+      text: sub.text
+    }));
+  };
+
+  const exportMomentSubtitles = (langCode: string, moment: ViralMoment, langName: string) => {
+    const subs = getSubtitlesForMoment(langCode, moment.start, moment.end);
+    
+    if (subs.length === 0) {
+      toast.error(language === "fr" ? "Aucun sous-titre pour ce moment" : "No subtitles for this moment");
+      return;
+    }
+
+    // Export as SRT format
+    const srtContent = subs.map((sub, index) => {
+      const startTime = formatSRTTime(sub.start);
+      const endTime = formatSRTTime(sub.end);
+      return `${index + 1}\n${startTime} --> ${endTime}\n${sub.text}\n`;
+    }).join('\n');
+
+    const blob = new Blob([srtContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `moment_${Math.round(moment.start)}-${Math.round(moment.end)}_${langCode}.srt`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast.success(language === "fr" ? `Sous-titres ${langName} exportés !` : `${langName} subtitles exported!`);
+  };
+
+  const formatSRTTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    const ms = Math.floor((seconds % 1) * 1000);
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+  };
+
+  const LANGUAGE_FLAGS: Record<string, { name: string; flag: string }> = {
+    'fr': { name: 'Français', flag: '🇫🇷' },
+    'es': { name: 'Espagnol', flag: '🇪🇸' },
+    'de': { name: 'Allemand', flag: '🇩🇪' },
+    'it': { name: 'Italien', flag: '🇮🇹' },
+    'pt': { name: 'Portugais', flag: '🇵🇹' },
+    'ja': { name: 'Japonais', flag: '🇯🇵' },
+    'ko': { name: 'Coréen', flag: '🇰🇷' },
+    'zh': { name: 'Chinois', flag: '🇨🇳' },
+    'ar': { name: 'Arabe', flag: '🇸🇦' },
+    'ru': { name: 'Russe', flag: '🇷🇺' },
+    'hi': { name: 'Hindi', flag: '🇮🇳' },
+    'en': { name: 'Anglais', flag: '🇬🇧' },
   };
 
   return (
@@ -338,6 +410,43 @@ export const ViralMomentDetector = ({ videoRef, onMomentSelect, existingMoments 
                           {tag}
                         </Badge>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Subtitles Available */}
+                  {Object.keys(translatedSubtitles).length > 0 && (
+                    <div className="pt-4 border-t border-border/50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Languages className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-semibold text-foreground">
+                          {language === "fr" ? "Sous-titres disponibles :" : "Subtitles available:"}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.keys(translatedSubtitles).map((langCode) => {
+                          const lang = LANGUAGE_FLAGS[langCode];
+                          const subsCount = getSubtitlesForMoment(langCode, moment.start, moment.end).length;
+                          
+                          if (subsCount === 0) return null;
+                          
+                          return (
+                            <Button
+                              key={langCode}
+                              variant="outline"
+                              size="sm"
+                              className="gap-2 text-xs border-primary/20 hover:border-primary/40 hover:bg-primary/10"
+                              onClick={() => exportMomentSubtitles(langCode, moment, lang?.name || langCode)}
+                            >
+                              <span>{lang?.flag || '🌐'}</span>
+                              <span>{lang?.name || langCode}</span>
+                              <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
+                                {subsCount}
+                              </Badge>
+                              <Download className="w-3 h-3" />
+                            </Button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
