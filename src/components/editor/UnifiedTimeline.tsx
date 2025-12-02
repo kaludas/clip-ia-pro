@@ -28,6 +28,24 @@ interface Layer {
   duration: number;
 }
 
+interface TextOverlay {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  fontSize: number;
+  color: string;
+  animation: string;
+  startTime: number;
+  endTime: number;
+}
+
+interface Subtitle {
+  start: number;
+  end: number;
+  text: string;
+}
+
 interface VideoSegment {
   id: string;
   startTime: number;
@@ -45,6 +63,8 @@ interface UnifiedTimelineProps {
   trimEnd: number;
   audioTracks: AudioTrack[];
   layers: Layer[];
+  textOverlays: TextOverlay[];
+  subtitles: Subtitle[];
   videoSegments?: VideoSegment[];
   onSeek: (time: number) => void;
   onPlayPause: () => void;
@@ -57,6 +77,8 @@ interface UnifiedTimelineProps {
   onLayerToggle: (id: string) => void;
   onLayerRemove: (id: string) => void;
   onLayerTimeChange: (id: string, startTime: number, duration: number) => void;
+  onTextOverlayRemove: (id: string) => void;
+  onTextOverlayTimeChange: (id: string, startTime: number, endTime: number) => void;
   onVideoSplit: (time: number) => void;
   onVideoSegmentRemove: (id: string) => void;
   onVideoSegmentTimeChange: (id: string, startTime: number, duration: number) => void;
@@ -71,6 +93,8 @@ export const UnifiedTimeline = ({
   trimEnd,
   audioTracks,
   layers,
+  textOverlays,
+  subtitles,
   videoSegments = [],
   onSeek,
   onPlayPause,
@@ -83,13 +107,15 @@ export const UnifiedTimeline = ({
   onLayerToggle,
   onLayerRemove,
   onLayerTimeChange,
+  onTextOverlayRemove,
+  onTextOverlayTimeChange,
   onVideoSplit,
   onVideoSegmentRemove,
   onVideoSegmentTimeChange
 }: UnifiedTimelineProps) => {
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isTrimming, setIsTrimming] = useState<'start' | 'end' | null>(null);
-  const [isDragging, setIsDragging] = useState<{ type: 'audio' | 'layer' | 'audio-edge' | 'layer-edge' | 'segment' | 'segment-edge', id: string, edge?: 'start' | 'end' } | null>(null);
+  const [isDragging, setIsDragging] = useState<{ type: 'audio' | 'layer' | 'audio-edge' | 'layer-edge' | 'text' | 'text-edge' | 'segment' | 'segment-edge', id: string, edge?: 'start' | 'end' } | null>(null);
   const [timelineZoom, setTimelineZoom] = useState(1); // 1 = normal, 2 = 2x zoom, etc.
 
   const formatTime = (seconds: number) => {
@@ -107,6 +133,10 @@ export const UnifiedTimeline = ({
       ...audioTracks.map(t => t.startTime + t.duration),
       ...layers.map(l => l.startTime),
       ...layers.map(l => l.startTime + l.duration),
+      ...textOverlays.map(t => t.startTime),
+      ...textOverlays.map(t => t.endTime),
+      ...subtitles.map(s => s.start),
+      ...subtitles.map(s => s.end),
       ...videoSegments.map(s => s.startTime),
       ...videoSegments.map(s => s.startTime + s.duration),
     ];
@@ -175,6 +205,14 @@ export const UnifiedTimeline = ({
             const clampedTime = Math.max(0, Math.min(duration - segment.duration, snappedTime));
             onVideoSegmentTimeChange(isDragging.id, clampedTime, segment.duration);
           }
+        } else if (isDragging.type === 'text') {
+          const text = textOverlays.find(t => t.id === isDragging.id);
+          if (text) {
+            const textDuration = text.endTime - text.startTime;
+            const snappedTime = applySnapping(newTime);
+            const clampedTime = Math.max(0, Math.min(duration - textDuration, snappedTime));
+            onTextOverlayTimeChange(isDragging.id, clampedTime, clampedTime + textDuration);
+          }
         } else if (isDragging.type === 'audio-edge') {
           const track = audioTracks.find(t => t.id === isDragging.id);
           if (track) {
@@ -203,6 +241,21 @@ export const UnifiedTimeline = ({
               const snappedTime = applySnapping(newTime);
               const newDuration = Math.max(minDuration, snappedTime - layer.startTime);
               onLayerTimeChange(isDragging.id, layer.startTime, newDuration);
+            }
+          }
+        } else if (isDragging.type === 'text-edge') {
+          const text = textOverlays.find(t => t.id === isDragging.id);
+          if (text) {
+            if (isDragging.edge === 'start') {
+              const maxStart = text.endTime - 0.5;
+              const snappedTime = applySnapping(newTime);
+              const newStart = Math.max(0, Math.min(maxStart, snappedTime));
+              onTextOverlayTimeChange(isDragging.id, newStart, text.endTime);
+            } else {
+              const minEnd = text.startTime + 0.5;
+              const snappedTime = applySnapping(newTime);
+              const newEnd = Math.max(minEnd, snappedTime);
+              onTextOverlayTimeChange(isDragging.id, text.startTime, newEnd);
             }
           }
         } else if (isDragging.type === 'segment-edge') {
@@ -237,7 +290,7 @@ export const UnifiedTimeline = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isTrimming, isDragging, duration, trimStart, trimEnd, audioTracks, layers, videoSegments, onTrimChange, onAudioTimeChange, onLayerTimeChange, onVideoSegmentTimeChange]);
+  }, [isTrimming, isDragging, duration, trimStart, trimEnd, audioTracks, layers, textOverlays, videoSegments, onTrimChange, onAudioTimeChange, onLayerTimeChange, onTextOverlayTimeChange, onVideoSegmentTimeChange]);
 
   // Keyboard shortcut for split
   useEffect(() => {
@@ -677,6 +730,103 @@ export const UnifiedTimeline = ({
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Text Overlays Tracks */}
+        {textOverlays.length > 0 && (
+          <div className="space-y-2">
+            {textOverlays.map((text) => {
+              const textStartPercentage = duration > 0 ? (text.startTime / duration) * 100 : 0;
+              const textDuration = text.endTime - text.startTime;
+              const textWidthPercentage = duration > 0 ? (textDuration / duration) * 100 : 0;
+              
+              return (
+                <div key={text.id}>
+                  <div className="text-xs text-muted-foreground mb-1 flex items-center justify-between">
+                    <span className="font-medium flex items-center gap-2">
+                      💬 {text.text.substring(0, 30)}{text.text.length > 30 ? '...' : ''}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px]">{text.animation}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5"
+                        onClick={() => onTextOverlayRemove(text.id)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="relative h-12 bg-muted/20 rounded-lg overflow-hidden">
+                    <div
+                      className="absolute inset-y-0 bg-cyan-500/30 border-2 border-cyan-500 rounded flex items-center justify-center cursor-move group/text hover:bg-cyan-500/40 transition-colors"
+                      style={{
+                        left: `${textStartPercentage}%`,
+                        width: `${textWidthPercentage}%`
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const mouseX = e.clientX - rect.left;
+                        const isNearStart = mouseX < 10;
+                        const isNearEnd = mouseX > rect.width - 10;
+                        
+                        if (isNearStart) {
+                          setIsDragging({ type: 'text-edge', id: text.id, edge: 'start' });
+                        } else if (isNearEnd) {
+                          setIsDragging({ type: 'text-edge', id: text.id, edge: 'end' });
+                        } else {
+                          setIsDragging({ type: 'text', id: text.id });
+                        }
+                      }}
+                    >
+                      <div className="absolute left-0 inset-y-0 w-2 bg-cyan-600 cursor-ew-resize opacity-0 group-hover/text:opacity-100 transition-opacity hover:bg-cyan-500">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-6 bg-background rounded-full" />
+                      </div>
+                      
+                      <div className="text-[10px] font-medium text-cyan-300 truncate px-2 pointer-events-none">
+                        {text.text}
+                      </div>
+                      
+                      <div className="absolute right-0 inset-y-0 w-2 bg-cyan-600 cursor-ew-resize opacity-0 group-hover/text:opacity-100 transition-opacity hover:bg-cyan-500">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-6 bg-background rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Subtitles Track (Read-only visualization) */}
+        {subtitles.length > 0 && (
+          <div>
+            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-2">
+              <span className="font-medium">📝 Sous-titres</span>
+              <span className="text-[10px]">{subtitles.length} segments</span>
+            </div>
+            <div className="relative h-12 bg-muted/20 rounded-lg overflow-hidden">
+              {subtitles.map((subtitle, index) => {
+                const subStartPercentage = duration > 0 ? (subtitle.start / duration) * 100 : 0;
+                const subDuration = subtitle.end - subtitle.start;
+                const subWidthPercentage = duration > 0 ? (subDuration / duration) * 100 : 0;
+                
+                return (
+                  <div
+                    key={index}
+                    className="absolute inset-y-0 bg-yellow-500/30 border border-yellow-500/50 rounded-sm"
+                    style={{
+                      left: `${subStartPercentage}%`,
+                      width: `${subWidthPercentage}%`
+                    }}
+                    title={subtitle.text}
+                  />
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

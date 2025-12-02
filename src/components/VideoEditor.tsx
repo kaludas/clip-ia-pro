@@ -505,6 +505,17 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               ));
             }}
             videoSegments={videoSegments}
+            textOverlays={textOverlays}
+            subtitles={generatedSubtitles}
+            onTextOverlayRemove={(id) => {
+              setTextOverlays(textOverlays.filter(text => text.id !== id));
+              toast.success("Texte supprimé");
+            }}
+            onTextOverlayTimeChange={(id, startTime, endTime) => {
+              setTextOverlays(textOverlays.map(text =>
+                text.id === id ? { ...text, startTime, endTime } : text
+              ));
+            }}
           />
         </div>
 
