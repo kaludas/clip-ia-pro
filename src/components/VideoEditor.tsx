@@ -36,6 +36,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -130,34 +131,57 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   }>>([]);
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.addEventListener("loadedmetadata", () => {
-        const dur = videoRef.current?.duration || 0;
-        setDuration(dur);
-        setTrimEnd(dur);
-      });
-      
-      videoRef.current.addEventListener("timeupdate", () => {
-        setCurrentTime(videoRef.current?.currentTime || 0);
-      });
+    const video = videoRef.current;
+    if (!video) return;
 
-      // Set initial volume
-      videoRef.current.volume = volume / 100;
+    const handleLoadedMetadata = () => {
+      const dur = video.duration || 0;
+      setDuration(dur);
+      setTrimEnd(dur);
+    };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(video.currentTime || 0);
+    };
+
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+    video.addEventListener("timeupdate", handleTimeUpdate);
+
+    return () => {
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+
+    if (video) {
+      // Met à jour le volume sans recréer le lecteur
+      video.volume = volume / 100;
     }
 
-    // Keyboard shortcuts (like CapCut)
+    // Raccourcis clavier (type CapCut)
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Prevent shortcuts when typing in inputs
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
 
-      switch(e.code) {
-        case 'Space':
+      switch (e.code) {
+        case "Space": {
           e.preventDefault();
-          togglePlayPause();
+          if (!videoRef.current) return;
+
+          if (videoRef.current.paused) {
+            videoRef.current.play();
+            setIsPlaying(true);
+          } else {
+            videoRef.current.pause();
+            setIsPlaying(false);
+          }
           break;
-        case 'ArrowLeft':
+        }
+        case "ArrowLeft": {
           e.preventDefault();
           if (videoRef.current) {
             videoRef.current.currentTime = Math.max(
@@ -166,7 +190,8 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
             );
           }
           break;
-        case 'ArrowRight':
+        }
+        case "ArrowRight": {
           e.preventDefault();
           if (videoRef.current) {
             videoRef.current.currentTime = Math.min(
@@ -175,35 +200,48 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
             );
           }
           break;
-        case 'KeyI':
+        }
+        case "KeyI": {
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
-            setTrimStart(currentTime);
+            const time = videoRef.current?.currentTime ?? trimStart;
+            setTrimStart(time);
             toast.success("Point d'entrée défini");
           }
           break;
-        case 'KeyO':
+        }
+        case "KeyO": {
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
-            setTrimEnd(currentTime);
+            const time = videoRef.current?.currentTime ?? trimEnd;
+            setTrimEnd(time);
             toast.success("Point de sortie défini");
           }
           break;
-        case 'KeyZ':
+        }
+        case "KeyZ": {
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
-            handleReset();
+            // Réinitialise les effets sans recréer la fonction handleReset
+            setBrightness(100);
+            setContrast(100);
+            setSaturation(100);
+            setBlur(0);
+            setSelectedFilter("none");
+            setTextOverlays([]);
+            toast.success(t("editor.reset"));
           }
           break;
+        }
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
+    window.addEventListener("keydown", handleKeyPress);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyPress);
+      window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [currentTime, trimStart, trimEnd, volume]);
+  }, [trimStart, trimEnd, volume, t]);
 
   // Preload layer images
   useEffect(() => {
@@ -219,26 +257,31 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     });
   }, [layers]);
 
-  // Apply filters to canvas
+  // Applique les filtres sur le canvas avec une boucle requestAnimationFrame contrôlée
   useEffect(() => {
-    if (!videoRef.current || !canvasRef.current) return;
-    
     const video = videoRef.current;
     const canvas = canvasRef.current;
+
+    if (!video || !canvas) return;
+
     const ctx = canvas.getContext("2d");
-    
     if (!ctx) return;
-    
-    const updateCanvas = () => {
-      if (video.paused && !video.ended) return;
-      
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      
-      // Apply filters
+
+    const renderFrame = () => {
+      if (!video || !canvas) return;
+
+      // Dimensionne le canvas en fonction de la vidéo
+      if (video.videoWidth && video.videoHeight) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      }
+
+      const time = video.currentTime || 0;
+
+      // Effets de base
       ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`;
-      
-      // Apply preset filters
+
+      // Filtres prédéfinis
       if (selectedFilter !== "none") {
         switch (selectedFilter) {
           case "vintage":
@@ -255,30 +298,29 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
             break;
         }
       }
-      
+
+      // Image vidéo de base
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // Draw layer overlays (filters/images uploaded by user)
+
+      // Calques overlays (images/overlays)
       layers
-        .filter(layer => layer.visible && currentTime >= layer.startTime && currentTime < layer.startTime + layer.duration)
+        .filter(layer => layer.visible && time >= layer.startTime && time < layer.startTime + layer.duration)
         .sort((a, b) => a.zIndex - b.zIndex)
         .forEach(layer => {
           if (layer.url && layerImages[layer.id]) {
             ctx.filter = "none";
             ctx.globalAlpha = layer.opacity / 100;
-            
+
             const img = layerImages[layer.id];
             const position = layer.position || { x: 50, y: 50 };
             const scale = layer.scale || 1;
-            
-            // Calculate actual position on canvas (percentage to pixels)
+
             const x = (position.x / 100) * canvas.width;
             const y = (position.y / 100) * canvas.height;
-            
-            // Calculate scaled dimensions
+
             const imgWidth = img.width * scale;
             const imgHeight = img.height * scale;
-            
+
             ctx.save();
             ctx.translate(x, y);
             if (layer.rotation) {
@@ -286,26 +328,25 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
             }
             ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
             ctx.restore();
-            
+
             ctx.globalAlpha = 1;
           }
         });
-      
-      // Draw text overlays
+
+      // Textes
       textOverlays.forEach(overlay => {
-        if (currentTime >= overlay.startTime && currentTime <= overlay.endTime) {
+        if (time >= overlay.startTime && time <= overlay.endTime) {
           ctx.filter = "none";
           ctx.font = `bold ${overlay.fontSize}px Arial`;
           ctx.fillStyle = overlay.color;
           ctx.textAlign = "center";
-          
-          // Apply animation
+
           let x = overlay.x;
           let y = overlay.y;
           let alpha = 1;
-          
-          const progress = (currentTime - overlay.startTime) / (overlay.endTime - overlay.startTime);
-          
+
+          const progress = (time - overlay.startTime) / (overlay.endTime - overlay.startTime);
+
           if (overlay.animation === "fadeIn") {
             alpha = Math.min(progress * 3, 1);
           } else if (overlay.animation === "slideUp") {
@@ -314,18 +355,18 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
             const bounce = Math.sin(progress * Math.PI * 2) * 20;
             y = overlay.y + bounce;
           }
-          
+
           ctx.globalAlpha = alpha;
           ctx.fillText(overlay.text, x, y);
           ctx.globalAlpha = 1;
         }
       });
-      
-      // Draw subtitles if available
+
+      // Sous-titres
       const currentSubtitle = generatedSubtitles.find(
-        seg => currentTime >= seg.start && currentTime <= seg.end
+        seg => time >= seg.start && time <= seg.end
       );
-      
+
       if (currentSubtitle) {
         ctx.filter = "none";
         ctx.font = "bold 32px Arial";
@@ -334,20 +375,29 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
         ctx.lineWidth = 3;
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
-        
+
         const x = canvas.width / 2;
         const y = canvas.height - 50;
-        
-        // Draw text with stroke (outline)
+
         ctx.strokeText(currentSubtitle.text, x, y);
         ctx.fillText(currentSubtitle.text, x, y);
       }
-      
-      requestAnimationFrame(updateCanvas);
+
+      // Tant que la vidéo lit, on continue la boucle d'animation
+      if (isPlaying) {
+        animationFrameRef.current = requestAnimationFrame(renderFrame);
+      }
     };
-    
-    updateCanvas();
-  }, [brightness, contrast, saturation, blur, selectedFilter, textOverlays, currentTime, layers, generatedSubtitles, layerImages]);
+
+    // Premier rendu (par exemple en pause ou après un seek)
+    renderFrame();
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [brightness, contrast, saturation, blur, selectedFilter, textOverlays, layers, generatedSubtitles, layerImages, isPlaying]);
   
   // Apply speed control based on current time
   useEffect(() => {
