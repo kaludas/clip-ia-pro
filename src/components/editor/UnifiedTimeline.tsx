@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, SkipBack, SkipForward, Volume2, X, Eye, EyeOff } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { AudioWaveform } from "./AudioWaveform";
 
 interface AudioTrack {
   id: string;
@@ -67,6 +68,7 @@ interface UnifiedTimelineProps {
   subtitles: Subtitle[];
   translatedSubtitles?: Record<string, Subtitle[]>;
   videoSegments?: VideoSegment[];
+  videoUrl?: string;
   onSeek: (time: number) => void;
   onPlayPause: () => void;
   onVolumeChange: (volume: number) => void;
@@ -98,6 +100,7 @@ export const UnifiedTimeline = ({
   subtitles,
   translatedSubtitles = {},
   videoSegments = [],
+  videoUrl,
   onSeek,
   onPlayPause,
   onVolumeChange,
@@ -558,6 +561,25 @@ export const UnifiedTimeline = ({
             </div>
           </div>
         </div>
+
+        {/* Audio Waveform Track */}
+        {videoUrl && (
+          <div>
+            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-2">
+              <span className="font-medium">🎵 Audio de la vidéo</span>
+            </div>
+            <div className="relative rounded-lg overflow-hidden bg-muted/30">
+              <AudioWaveform
+                videoUrl={videoUrl}
+                duration={duration}
+                currentTime={currentTime}
+                trimStart={trimStart}
+                trimEnd={trimEnd}
+                height={50}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Audio Tracks */}
         {audioTracks.length > 0 && (
