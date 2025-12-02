@@ -24,6 +24,14 @@ interface Layer {
   position?: { x: number; y: number };
   scale?: number;
   rotation?: number;
+  startTime: number;
+  duration: number;
+}
+
+interface VideoSegment {
+  id: string;
+  startTime: number;
+  duration: number;
 }
 
 interface UnifiedTimelineProps {
@@ -35,6 +43,7 @@ interface UnifiedTimelineProps {
   trimEnd: number;
   audioTracks: AudioTrack[];
   layers: Layer[];
+  videoSegments?: VideoSegment[];
   onSeek: (time: number) => void;
   onPlayPause: () => void;
   onVolumeChange: (volume: number) => void;
@@ -42,8 +51,11 @@ interface UnifiedTimelineProps {
   onSkip: (seconds: number) => void;
   onAudioVolumeChange: (id: string, volume: number) => void;
   onAudioRemove: (id: string) => void;
+  onAudioTimeChange: (id: string, startTime: number, duration: number) => void;
   onLayerToggle: (id: string) => void;
   onLayerRemove: (id: string) => void;
+  onLayerTimeChange: (id: string, startTime: number, duration: number) => void;
+  onVideoSplit: (time: number) => void;
 }
 
 export const UnifiedTimeline = ({
@@ -55,6 +67,7 @@ export const UnifiedTimeline = ({
   trimEnd,
   audioTracks,
   layers,
+  videoSegments = [],
   onSeek,
   onPlayPause,
   onVolumeChange,
@@ -62,11 +75,15 @@ export const UnifiedTimeline = ({
   onSkip,
   onAudioVolumeChange,
   onAudioRemove,
+  onAudioTimeChange,
   onLayerToggle,
-  onLayerRemove
+  onLayerRemove,
+  onLayerTimeChange,
+  onVideoSplit
 }: UnifiedTimelineProps) => {
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isTrimming, setIsTrimming] = useState<'start' | 'end' | null>(null);
+  const [isDragging, setIsDragging] = useState<{ type: 'audio' | 'layer' | 'audio-edge' | 'layer-edge', id: string, edge?: 'start' | 'end' } | null>(null);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -91,7 +108,7 @@ export const UnifiedTimeline = ({
   };
 
   useEffect(() => {
-    if (!isTrimming) return;
+    if (!isTrimming && !isDragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!timelineRef.current) return;
@@ -101,15 +118,60 @@ export const UnifiedTimeline = ({
       const percentage = Math.max(0, Math.min(1, x / rect.width));
       const newTime = percentage * duration;
 
-      if (isTrimming === 'start') {
-        onTrimChange(Math.min(newTime, trimEnd - 0.5), trimEnd);
-      } else {
-        onTrimChange(trimStart, Math.max(newTime, trimStart + 0.5));
+      if (isTrimming) {
+        if (isTrimming === 'start') {
+          onTrimChange(Math.min(newTime, trimEnd - 0.5), trimEnd);
+        } else {
+          onTrimChange(trimStart, Math.max(newTime, trimStart + 0.5));
+        }
+      } else if (isDragging) {
+        if (isDragging.type === 'audio') {
+          const track = audioTracks.find(t => t.id === isDragging.id);
+          if (track) {
+            const clampedTime = Math.max(0, Math.min(duration - track.duration, newTime));
+            onAudioTimeChange(isDragging.id, clampedTime, track.duration);
+          }
+        } else if (isDragging.type === 'layer') {
+          const layer = layers.find(l => l.id === isDragging.id);
+          if (layer) {
+            const clampedTime = Math.max(0, Math.min(duration - layer.duration, newTime));
+            onLayerTimeChange(isDragging.id, clampedTime, layer.duration);
+          }
+        } else if (isDragging.type === 'audio-edge') {
+          const track = audioTracks.find(t => t.id === isDragging.id);
+          if (track) {
+            if (isDragging.edge === 'start') {
+              const maxStart = track.startTime + track.duration - 0.5;
+              const newStart = Math.max(0, Math.min(maxStart, newTime));
+              const newDuration = track.duration + (track.startTime - newStart);
+              onAudioTimeChange(isDragging.id, newStart, newDuration);
+            } else {
+              const minDuration = 0.5;
+              const newDuration = Math.max(minDuration, newTime - track.startTime);
+              onAudioTimeChange(isDragging.id, track.startTime, newDuration);
+            }
+          }
+        } else if (isDragging.type === 'layer-edge') {
+          const layer = layers.find(l => l.id === isDragging.id);
+          if (layer) {
+            if (isDragging.edge === 'start') {
+              const maxStart = layer.startTime + layer.duration - 0.5;
+              const newStart = Math.max(0, Math.min(maxStart, newTime));
+              const newDuration = layer.duration + (layer.startTime - newStart);
+              onLayerTimeChange(isDragging.id, newStart, newDuration);
+            } else {
+              const minDuration = 0.5;
+              const newDuration = Math.max(minDuration, newTime - layer.startTime);
+              onLayerTimeChange(isDragging.id, layer.startTime, newDuration);
+            }
+          }
+        }
       }
     };
 
     const handleMouseUp = () => {
       setIsTrimming(null);
+      setIsDragging(null);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -119,7 +181,7 @@ export const UnifiedTimeline = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isTrimming, duration, trimStart, trimEnd, onTrimChange]);
+  }, [isTrimming, isDragging, duration, trimStart, trimEnd, audioTracks, layers, onTrimChange, onAudioTimeChange, onLayerTimeChange]);
 
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
   const trimStartPercentage = duration > 0 ? (trimStart / duration) * 100 : 0;
@@ -158,6 +220,16 @@ export const UnifiedTimeline = ({
           onClick={() => onSkip(5)}
         >
           <SkipForward className="w-4 h-4" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-3 font-semibold"
+          onClick={() => onVideoSplit(currentTime)}
+          title="Couper la vidéo (S)"
+        >
+          ✂️ Split
         </Button>
 
         <div className="text-sm font-mono tabular-nums">
@@ -279,58 +351,84 @@ export const UnifiedTimeline = ({
               const trackWidthPercentage = duration > 0 ? (track.duration / duration) * 100 : 0;
               
               return (
-                <div key={track.id}>
-                  <div className="text-xs text-muted-foreground mb-1 flex items-center justify-between">
-                    <span className="font-medium flex items-center gap-2">
-                      🎵 {track.name}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <Volume2 className="w-3 h-3" />
-                        <Slider
-                          value={[track.volume]}
-                          onValueChange={(value) => onAudioVolumeChange(track.id, value[0])}
-                          max={100}
-                          step={1}
-                          className="w-16"
-                        />
-                        <span className="text-[10px] w-6">{track.volume}%</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5"
-                        onClick={() => onAudioRemove(track.id)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="relative h-12 bg-muted/20 rounded-lg overflow-hidden">
-                    {/* Audio track visual representation */}
-                    <div
-                      className="absolute inset-y-0 bg-emerald-500/30 border-l-2 border-r-2 border-emerald-500 rounded flex items-center justify-center"
-                      style={{
-                        left: `${trackStartPercentage}%`,
-                        width: `${trackWidthPercentage}%`
-                      }}
-                    >
-                      <div className="text-[10px] font-medium text-emerald-300 truncate px-2">
-                        {track.name}
-                      </div>
-                      {/* Simulated waveform */}
-                      <div className="absolute inset-0 flex items-center gap-[2px] px-1 opacity-50">
-                        {Array.from({ length: 40 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="flex-1 bg-emerald-400 rounded-full"
-                            style={{ height: `${20 + Math.random() * 60}%` }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  <div key={track.id}>
+                   <div className="text-xs text-muted-foreground mb-1 flex items-center justify-between">
+                     <span className="font-medium flex items-center gap-2">
+                       🎵 {track.name}
+                     </span>
+                     <div className="flex items-center gap-2">
+                       <div className="flex items-center gap-1">
+                         <Volume2 className="w-3 h-3" />
+                         <Slider
+                           value={[track.volume]}
+                           onValueChange={(value) => onAudioVolumeChange(track.id, value[0])}
+                           max={100}
+                           step={1}
+                           className="w-16"
+                         />
+                         <span className="text-[10px] w-6">{track.volume}%</span>
+                       </div>
+                       <Button
+                         variant="ghost"
+                         size="icon"
+                         className="h-5 w-5"
+                         onClick={() => onAudioRemove(track.id)}
+                       >
+                         <X className="w-3 h-3" />
+                       </Button>
+                     </div>
+                   </div>
+                   <div className="relative h-12 bg-muted/20 rounded-lg overflow-hidden">
+                     {/* Audio track visual representation */}
+                     <div
+                       className="absolute inset-y-0 bg-emerald-500/30 border-l-2 border-r-2 border-emerald-500 rounded flex items-center justify-center cursor-move group/audio hover:bg-emerald-500/40 transition-colors"
+                       style={{
+                         left: `${trackStartPercentage}%`,
+                         width: `${trackWidthPercentage}%`
+                       }}
+                       onMouseDown={(e) => {
+                         e.stopPropagation();
+                         const rect = e.currentTarget.getBoundingClientRect();
+                         const mouseX = e.clientX - rect.left;
+                         const isNearStart = mouseX < 10;
+                         const isNearEnd = mouseX > rect.width - 10;
+                         
+                         if (isNearStart) {
+                           setIsDragging({ type: 'audio-edge', id: track.id, edge: 'start' });
+                         } else if (isNearEnd) {
+                           setIsDragging({ type: 'audio-edge', id: track.id, edge: 'end' });
+                         } else {
+                           setIsDragging({ type: 'audio', id: track.id });
+                         }
+                       }}
+                     >
+                       {/* Start edge handle */}
+                       <div className="absolute left-0 inset-y-0 w-2 bg-emerald-600 cursor-ew-resize opacity-0 group-hover/audio:opacity-100 transition-opacity hover:bg-emerald-500">
+                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-6 bg-background rounded-full" />
+                       </div>
+                       
+                       <div className="text-[10px] font-medium text-emerald-300 truncate px-2 pointer-events-none">
+                         {track.name}
+                       </div>
+                       
+                       {/* Simulated waveform */}
+                       <div className="absolute inset-0 flex items-center gap-[2px] px-1 opacity-50 pointer-events-none">
+                         {Array.from({ length: 40 }).map((_, i) => (
+                           <div
+                             key={i}
+                             className="flex-1 bg-emerald-400 rounded-full"
+                             style={{ height: `${20 + Math.random() * 60}%` }}
+                           />
+                         ))}
+                       </div>
+                       
+                       {/* End edge handle */}
+                       <div className="absolute right-0 inset-y-0 w-2 bg-emerald-600 cursor-ew-resize opacity-0 group-hover/audio:opacity-100 transition-opacity hover:bg-emerald-500">
+                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-6 bg-background rounded-full" />
+                       </div>
+                     </div>
+                   </div>
+                 </div>
               );
             })}
           </div>
@@ -339,47 +437,85 @@ export const UnifiedTimeline = ({
         {/* Layer Tracks (Filters, Overlays, Images) */}
         {layers.length > 0 && (
           <div className="space-y-2">
-            {layers.map((layer) => (
-              <div key={layer.id}>
-                <div className="text-xs text-muted-foreground mb-1 flex items-center justify-between">
-                  <span className="font-medium flex items-center gap-2">
-                    {layer.type === "image" ? "🖼️" : layer.type === "video" ? "🎞️" : layer.type === "text" ? "📝" : "✨"} {layer.name}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5"
-                      onClick={() => onLayerToggle(layer.id)}
-                    >
-                      {layer.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5"
-                      onClick={() => onLayerRemove(layer.id)}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
+            {layers.map((layer) => {
+              const layerStartPercentage = duration > 0 ? (layer.startTime / duration) * 100 : 0;
+              const layerWidthPercentage = duration > 0 ? (layer.duration / duration) * 100 : 100;
+              
+              return (
+                <div key={layer.id}>
+                  <div className="text-xs text-muted-foreground mb-1 flex items-center justify-between">
+                    <span className="font-medium flex items-center gap-2">
+                      {layer.type === "image" ? "🖼️" : layer.type === "video" ? "🎞️" : layer.type === "text" ? "📝" : "✨"} {layer.name}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5"
+                        onClick={() => onLayerToggle(layer.id)}
+                      >
+                        {layer.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5"
+                        onClick={() => onLayerRemove(layer.id)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="relative h-12 bg-muted/20 rounded-lg overflow-hidden">
-                  {/* Layer visual representation - spans full timeline */}
-                  <div
-                    className={`absolute inset-0 ${
-                      layer.visible ? "bg-purple-500/30 border-2 border-purple-500" : "bg-muted/50 border-2 border-muted"
-                    } rounded flex items-center justify-center`}
-                  >
-                    <div className={`text-[10px] font-medium ${
-                      layer.visible ? "text-purple-300" : "text-muted-foreground"
-                    } truncate px-2`}>
-                      {layer.name}
+                  <div className="relative h-12 bg-muted/20 rounded-lg overflow-hidden">
+                    {/* Layer visual representation */}
+                    <div
+                      className={`absolute inset-y-0 ${
+                        layer.visible ? "bg-purple-500/30 border-2 border-purple-500" : "bg-muted/50 border-2 border-muted"
+                      } rounded flex items-center justify-center cursor-move group/layer hover:bg-purple-500/40 transition-colors`}
+                      style={{
+                        left: `${layerStartPercentage}%`,
+                        width: `${layerWidthPercentage}%`
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const mouseX = e.clientX - rect.left;
+                        const isNearStart = mouseX < 10;
+                        const isNearEnd = mouseX > rect.width - 10;
+                        
+                        if (isNearStart) {
+                          setIsDragging({ type: 'layer-edge', id: layer.id, edge: 'start' });
+                        } else if (isNearEnd) {
+                          setIsDragging({ type: 'layer-edge', id: layer.id, edge: 'end' });
+                        } else {
+                          setIsDragging({ type: 'layer', id: layer.id });
+                        }
+                      }}
+                    >
+                      {/* Start edge handle */}
+                      <div className={`absolute left-0 inset-y-0 w-2 ${
+                        layer.visible ? "bg-purple-600" : "bg-muted"
+                      } cursor-ew-resize opacity-0 group-hover/layer:opacity-100 transition-opacity hover:bg-purple-500`}>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-6 bg-background rounded-full" />
+                      </div>
+                      
+                      <div className={`text-[10px] font-medium ${
+                        layer.visible ? "text-purple-300" : "text-muted-foreground"
+                      } truncate px-2 pointer-events-none`}>
+                        {layer.name}
+                      </div>
+                      
+                      {/* End edge handle */}
+                      <div className={`absolute right-0 inset-y-0 w-2 ${
+                        layer.visible ? "bg-purple-600" : "bg-muted"
+                      } cursor-ew-resize opacity-0 group-hover/layer:opacity-100 transition-opacity hover:bg-purple-500`}>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-6 bg-background rounded-full" />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -389,6 +525,7 @@ export const UnifiedTimeline = ({
         <kbd className="px-1.5 py-0.5 bg-muted rounded">Espace</kbd> Play/Pause •{' '}
         <kbd className="px-1.5 py-0.5 bg-muted rounded">←</kbd>
         <kbd className="px-1.5 py-0.5 bg-muted rounded">→</kbd> ±5s •{' '}
+        <kbd className="px-1.5 py-0.5 bg-muted rounded">S</kbd> Split •{' '}
         <kbd className="px-1.5 py-0.5 bg-muted rounded">Ctrl+I</kbd> Point d'entrée •{' '}
         <kbd className="px-1.5 py-0.5 bg-muted rounded">Ctrl+O</kbd> Point de sortie
       </div>
