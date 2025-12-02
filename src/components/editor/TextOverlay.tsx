@@ -3,14 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { FontManager } from "./FontManager";
+import { Separator } from "@/components/ui/separator";
 
 interface TextOverlayProps {
   textOverlays: Array<{
     id: string;
     text: string;
     animation: string;
+    fontFamily?: string;
   }>;
-  onAddText: (text: string, animation: string) => void;
+  onAddText: (text: string, animation: string, fontFamily?: string) => void;
   onUpdateText: (id: string, updates: any) => void;
   onDeleteText: (id: string) => void;
 }
@@ -23,6 +26,7 @@ export const TextOverlay = ({
   const { t } = useLanguage();
   const [newText, setNewText] = useState("");
   const [selectedAnimation, setSelectedAnimation] = useState("fadeIn");
+  const [selectedFont, setSelectedFont] = useState("Bebas Neue");
 
   const animations = [
     { id: "none", name: t("editor.animation.none") },
@@ -33,13 +37,21 @@ export const TextOverlay = ({
 
   const handleAddText = () => {
     if (newText.trim()) {
-      onAddText(newText, selectedAnimation);
+      onAddText(newText, selectedAnimation, selectedFont);
       setNewText("");
     }
   };
 
   return (
     <div className="space-y-6">
+      {/* Font Selection */}
+      <FontManager 
+        selectedFont={selectedFont}
+        onFontChange={setSelectedFont}
+      />
+
+      <Separator />
+
       {/* Add New Text */}
       <div className="space-y-3">
         <h4 className="text-sm font-semibold">{t("editor.addText")}</h4>
@@ -48,6 +60,7 @@ export const TextOverlay = ({
           value={newText}
           onChange={(e) => setNewText(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && handleAddText()}
+          style={{ fontFamily: selectedFont }}
         />
         
         {/* Animation Selection */}
@@ -81,9 +94,15 @@ export const TextOverlay = ({
                 className="flex items-center justify-between p-3 glass rounded-xl"
               >
                 <div className="flex-1">
-                  <p className="text-sm font-medium">{overlay.text}</p>
+                  <p 
+                    className="text-sm font-medium" 
+                    style={{ fontFamily: overlay.fontFamily || 'Arial' }}
+                  >
+                    {overlay.text}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {animations.find(a => a.id === overlay.animation)?.name}
+                    {overlay.fontFamily && ` • ${overlay.fontFamily}`}
                   </p>
                 </div>
                 <Button
