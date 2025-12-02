@@ -92,6 +92,13 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     duration: number;
   }>>([]);
 
+  // Video segments state (for split functionality)
+  const [videoSegments, setVideoSegments] = useState<Array<{
+    id: string;
+    startTime: number;
+    duration: number;
+  }>>([]);
+
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.addEventListener("loadedmetadata", () => {
@@ -442,9 +449,62 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               ));
             }}
             onVideoSplit={(time) => {
-              toast.success(`Vidéo coupée à ${Math.floor(time)}s`);
-              // La logique de split sera implémentée dans une prochaine mise à jour
+              // Create two segments from split point
+              if (videoSegments.length === 0) {
+                // First split: create two segments from trimStart to trimEnd
+                const seg1 = {
+                  id: `seg-${Date.now()}-1`,
+                  startTime: trimStart,
+                  duration: time - trimStart
+                };
+                const seg2 = {
+                  id: `seg-${Date.now()}-2`,
+                  startTime: time,
+                  duration: trimEnd - time
+                };
+                setVideoSegments([seg1, seg2]);
+                toast.success("✂️ Vidéo coupée en 2 segments");
+              } else {
+                // Find which segment contains the split point
+                const segmentIndex = videoSegments.findIndex(
+                  seg => time >= seg.startTime && time <= seg.startTime + seg.duration
+                );
+                
+                if (segmentIndex !== -1) {
+                  const segment = videoSegments[segmentIndex];
+                  const newSegments = [...videoSegments];
+                  
+                  // Split the segment
+                  const seg1 = {
+                    id: `seg-${Date.now()}-1`,
+                    startTime: segment.startTime,
+                    duration: time - segment.startTime
+                  };
+                  const seg2 = {
+                    id: `seg-${Date.now()}-2`,
+                    startTime: time,
+                    duration: (segment.startTime + segment.duration) - time
+                  };
+                  
+                  // Replace the original segment with two new ones
+                  newSegments.splice(segmentIndex, 1, seg1, seg2);
+                  setVideoSegments(newSegments);
+                  toast.success(`✂️ Segment ${segmentIndex + 1} coupé`);
+                } else {
+                  toast.error("Position de coupe invalide");
+                }
+              }
             }}
+            onVideoSegmentRemove={(id) => {
+              setVideoSegments(videoSegments.filter(seg => seg.id !== id));
+              toast.success("🗑️ Segment supprimé");
+            }}
+            onVideoSegmentTimeChange={(id, startTime, duration) => {
+              setVideoSegments(videoSegments.map(seg =>
+                seg.id === id ? { ...seg, startTime, duration } : seg
+              ));
+            }}
+            videoSegments={videoSegments}
           />
         </div>
 
