@@ -14,6 +14,9 @@ import { SchedulePanel } from "./editor/SchedulePanel";
 import { AnalyticsDashboard } from "./analytics/AnalyticsDashboard";
 import { CollaborationPanel } from "./collaboration/CollaborationPanel";
 import SubtitleGenerator from "./editor/SubtitleGenerator";
+import SubtitleTranslator from "./editor/SubtitleTranslator";
+import SocialMediaPublisher from "./editor/SocialMediaPublisher";
+import { SecurityChecker } from "./security/SecurityChecker";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +36,14 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   const [duration, setDuration] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
-  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration" | "subtitles">("viral");
+  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration" | "subtitles" | "translate" | "publish" | "security">("viral");
+  
+  // Subtitles state
+  const [generatedSubtitles, setGeneratedSubtitles] = useState<Array<{
+    start: number;
+    end: number;
+    text: string;
+  }>>([]);
   
   // Effects state
   const [brightness, setBrightness] = useState(100);
@@ -343,6 +353,27 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   CC
                 </Button>
                 <Button
+                  variant={activePanel === "translate" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("translate")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                >
+                  🌐
+                </Button>
+                <Button
+                  variant={activePanel === "publish" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("publish")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                >
+                  📤
+                </Button>
+                <Button
+                  variant={activePanel === "security" ? "hero" : "ghost"}
+                  onClick={() => setActivePanel("security")}
+                  className="flex-1 whitespace-nowrap text-xs sm:text-sm"
+                >
+                  🛡️
+                </Button>
+                <Button
                   variant={activePanel === "export" ? "hero" : "ghost"}
                   onClick={() => setActivePanel("export")}
                   className="flex-1 whitespace-nowrap text-xs sm:text-sm"
@@ -437,8 +468,30 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               {activePanel === "subtitles" && (
                 <SubtitleGenerator 
                   onSubtitlesGenerated={(segments) => {
+                    setGeneratedSubtitles(segments);
                     console.log("Subtitles generated:", segments);
                     toast.success(`${segments.length} segments générés !`);
+                  }}
+                />
+              )}
+              
+              {activePanel === "translate" && (
+                <SubtitleTranslator subtitles={generatedSubtitles} />
+              )}
+              
+              {activePanel === "publish" && (
+                <SocialMediaPublisher videoUrl={videoUrl} duration={duration} />
+              )}
+              
+              {activePanel === "security" && (
+                <SecurityChecker
+                  audioTitle="Extrait de stream"
+                  audioArtist="Streamer"
+                  audioUrl={videoUrl || ""}
+                  transcript={generatedSubtitles.map(s => s.text).join(' ')}
+                  platform="tiktok"
+                  onCheckComplete={(results) => {
+                    console.log("Security check results:", results);
                   }}
                 />
               )}
