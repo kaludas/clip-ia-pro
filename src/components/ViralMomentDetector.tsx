@@ -413,6 +413,80 @@ export const ViralMomentDetector = ({ videoRef, onMomentSelect, existingMoments 
                     </div>
                   )}
 
+                  {/* Subtitle Timeline Visualization */}
+                  {Object.keys(translatedSubtitles).length > 0 && (
+                    <div className="pt-4 border-t border-border/50 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Languages className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-semibold text-foreground">
+                          {language === "fr" ? "Timeline des sous-titres" : "Subtitles timeline"}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {Object.entries(translatedSubtitles).map(([langCode, subs]) => {
+                          const lang = LANGUAGE_FLAGS[langCode];
+                          const momentSubs = getSubtitlesForMoment(langCode, moment.start, moment.end);
+                          
+                          if (momentSubs.length === 0) return null;
+                          
+                          const momentDuration = moment.end - moment.start;
+                          
+                          return (
+                            <div key={langCode} className="space-y-1">
+                              <div className="flex items-center gap-2 text-xs">
+                                <span>{lang?.flag || '🌐'}</span>
+                                <span className="text-muted-foreground font-medium">
+                                  {lang?.name || langCode}
+                                </span>
+                                <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                  {momentSubs.length}
+                                </Badge>
+                              </div>
+                              
+                              {/* Timeline bar */}
+                              <div className="relative h-8 bg-muted/30 rounded-md overflow-hidden border border-border/50">
+                                {/* Subtitle segments */}
+                                {momentSubs.map((sub, subIdx) => {
+                                  const startPercent = (sub.start / momentDuration) * 100;
+                                  const widthPercent = ((sub.end - sub.start) / momentDuration) * 100;
+                                  
+                                  return (
+                                    <div
+                                      key={subIdx}
+                                      className="absolute top-0 h-full bg-primary/60 hover:bg-primary/80 transition-all group cursor-pointer border-r border-primary/40"
+                                      style={{
+                                        left: `${startPercent}%`,
+                                        width: `${widthPercent}%`
+                                      }}
+                                      title={sub.text}
+                                    >
+                                      {/* Tooltip on hover */}
+                                      <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-10 min-w-[200px] max-w-[300px]">
+                                        <div className="bg-popover text-popover-foreground text-xs p-2 rounded-lg shadow-lg border border-border">
+                                          <div className="font-mono text-primary mb-1">
+                                            {sub.start.toFixed(1)}s - {sub.end.toFixed(1)}s
+                                          </div>
+                                          <div className="line-clamp-3">{sub.text}</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                
+                                {/* Time markers */}
+                                <div className="absolute inset-0 flex items-center justify-between px-2 pointer-events-none">
+                                  <span className="text-[10px] text-muted-foreground font-mono">0s</span>
+                                  <span className="text-[10px] text-muted-foreground font-mono">{duration}s</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Subtitles Available */}
                   {Object.keys(translatedSubtitles).length > 0 && (
                     <div className="pt-4 border-t border-border/50">
