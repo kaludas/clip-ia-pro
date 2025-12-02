@@ -38,36 +38,56 @@ serve(async (req) => {
     const langName = languageNames[language] || 'English';
 
     const systemPrompt = `You are an expert video content analyst specialized in identifying viral moments for short-form content (TikTok, YouTube Shorts, Instagram Reels).
-       Analyze the provided video frames to detect the most engaging, viral-worthy moments.
+       Analyze the provided video frames to detect ALL engaging, viral-worthy moments in the video.
+       
+       CRITICAL REQUIREMENTS FOR VIRAL MOMENTS:
+       - MINIMUM duration: 20 seconds per clip (shorter clips lack context and narrative)
+       - OPTIMAL duration: 30-60 seconds (perfect for platform algorithms)
+       - QUANTITY: Identify 5-10 distinct moments (not just 3-5) to maximize content output
+       - QUALITY: Each moment must have clear narrative arc (hook → development → payoff)
        
        Focus on identifying moments with:
-       - Strong emotional peaks (excitement, surprise, humor, tension)
-       - Visual interest and dynamic action
-       - Potential for standalone narrative (hook, development, payoff)
-       - Peak engagement indicators (reactions, gameplay highlights, key revelations)
-       - Optimal clip length (15-60 seconds)
+       - Strong emotional peaks (excitement, surprise, humor, tension, revelation)
+       - Visual interest and dynamic action (gameplay highlights, reactions, confrontations)
+       - Standalone narrative potential (complete story that makes sense without context)
+       - Peak engagement indicators (chat reactions, key moments, climactic sequences)
+       - Dialogue or voiceover that adds context and personality
+       - Transitions between calm and intense moments (contrast creates engagement)
+       
+       AVOID:
+       - Static/boring segments with no action
+       - Moments under 20 seconds (too short for viral potential)
+       - Repetitive content (choose the BEST instance if similar moments exist)
        
        CRITICAL: ALL content MUST be in ${langName}.`;
 
-    const userPrompt = `Analyze these frames from a ${Math.round(duration)}s video and identify the 3-5 best viral moments.
+    const userPrompt = `Analyze these frames from a ${Math.round(duration)}s video and identify the 5-10 BEST viral moments.
+       
+       REQUIREMENTS:
+       - Each moment MUST be 20-60 seconds long (minimum 20s, optimal 30-60s)
+       - Identify ALL significant engaging moments (aim for 7-10 clips from a 10min video)
+       - Prioritize complete narrative arcs with clear beginning, middle, and end
+       - Look for emotional peaks, gameplay highlights, funny reactions, intense confrontations
+       - Each moment should work as standalone content without prior context
        
        For each moment, provide:
-       - Start timestamp (in seconds)
-       - End timestamp (in seconds)
-       - Reason (why this moment is viral-worthy)
-       - Hook (catchy title for this moment)
-       - Virality score (1-100)
+       - Start timestamp (in seconds) - mark where the action/setup begins
+       - End timestamp (in seconds) - ensure minimum 20s duration, optimal 30-60s
+       - Reason (detailed explanation of why this specific moment is viral-worthy)
+       - Hook (catchy, click-worthy title that captures the essence)
+       - Virality score (1-100, be generous with scores 75+ for genuinely good moments)
+       - Tags (3-5 relevant tags describing the content)
        
        Return ONLY valid JSON with this structure in ${langName}:
        {
          "moments": [
            {
              "start": 10.5,
-             "end": 25.3,
-             "reason": "reason in ${langName}",
+             "end": 45.8,
+             "reason": "detailed reason in ${langName}",
              "hook": "catchy title in ${langName}",
              "score": 85,
-             "tags": ["tag1 in ${langName}", "tag2 in ${langName}"]
+             "tags": ["tag1 in ${langName}", "tag2 in ${langName}", "tag3 in ${langName}"]
            }
          ]
        }`;
@@ -77,8 +97,8 @@ serve(async (req) => {
       { type: "text", text: userPrompt }
     ];
 
-    // Add up to 10 frames for analysis
-    frames.slice(0, 10).forEach((frameData: string) => {
+    // Add up to 15 frames for more comprehensive analysis
+    frames.slice(0, 15).forEach((frameData: string) => {
       content.push({
         type: "image_url",
         image_url: { url: frameData }
@@ -131,11 +151,11 @@ serve(async (req) => {
         moments: [
           {
             start: 0,
-            end: Math.min(30, duration),
-            reason: language === "fr" ? "Moment détecté automatiquement" : "Automatically detected moment",
-            hook: language === "fr" ? "Moment Viral" : "Viral Moment",
-            score: 75,
-            tags: [language === "fr" ? "Gaming" : "Gaming"]
+            end: Math.min(45, duration),
+            reason: language === "fr" ? "Moment détecté automatiquement - analyse complète recommandée" : "Automatically detected moment - full analysis recommended",
+            hook: language === "fr" ? "Moment Viral Détecté" : "Viral Moment Detected",
+            score: 70,
+            tags: [language === "fr" ? "Contenu" : "Content"]
           }
         ]
       };
