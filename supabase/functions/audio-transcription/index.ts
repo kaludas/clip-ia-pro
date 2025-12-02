@@ -6,36 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Process base64 in chunks to prevent memory issues
-function processBase64Chunks(base64String: string, chunkSize = 32768) {
-  const chunks: Uint8Array[] = [];
-  let position = 0;
-  
-  while (position < base64String.length) {
-    const chunk = base64String.slice(position, position + chunkSize);
-    const binaryChunk = atob(chunk);
-    const bytes = new Uint8Array(binaryChunk.length);
-    
-    for (let i = 0; i < binaryChunk.length; i++) {
-      bytes[i] = binaryChunk.charCodeAt(i);
-    }
-    
-    chunks.push(bytes);
-    position += chunkSize;
-  }
-
-  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return result;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -48,58 +18,117 @@ serve(async (req) => {
       throw new Error('No audio data provided');
     }
 
-    console.log('Processing audio transcription request...');
+    console.log('Processing audio transcription with Lovable AI...');
     console.log('Language:', language);
     console.log('Format:', format);
 
-    // Process audio in chunks
-    const binaryAudio = processBase64Chunks(audio);
-    
-    // Prepare form data for OpenAI Whisper API
-    const formData = new FormData();
-    const blob = new Blob([binaryAudio], { type: `audio/${format}` });
-    formData.append('file', blob, `audio.${format}`);
-    formData.append('model', 'whisper-1');
-    formData.append('language', language);
-    formData.append('response_format', 'verbose_json'); // Get timestamps
-
-    // Send to OpenAI Whisper API
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    // Use Gemini 2.5 Flash for audio transcription
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a professional audio transcription assistant. Transcribe the audio content accurately in ${language}. Format your response as a JSON object with this structure:
+{
+  "text": "full transcription",
+  "segments": [
+    {"start": 0, "end": 5, "text": "segment text"},
+    ...
+  ]
+}
+
+Create segments of approximately 3-5 seconds each. Estimate timing based on speech pace. Return ONLY the JSON, no other text.`
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Please transcribe this audio file:'
+              },
+              {
+                type: 'audio',
+                audio: {
+                  data: audio,
+                  format: format
+                }
+              }
+            ]
+          }
+        ],
+      }),
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+      if (response.status === 402) {
+        throw new Error('Payment required. Please add credits to your Lovable AI workspace.');
+      }
       const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${errorText}`);
+      console.error('Lovable AI error:', response.status, errorText);
+      throw new Error(`Transcription failed: ${response.status}`);
     }
 
-    const result = await response.json();
-    console.log('Transcription successful');
+    const data = await response.json();
+    console.log('AI response received');
 
-    // Format the response with segments for subtitle timing
-    const formattedResult = {
-      text: result.text,
-      language: result.language,
-      duration: result.duration,
-      segments: result.segments?.map((segment: any) => ({
-        start: segment.start,
-        end: segment.end,
-        text: segment.text.trim()
-      })) || []
-    };
+    let result;
+    try {
+      const content = data.choices[0].message.content;
+      
+      // Try to extract JSON from the response
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        result = JSON.parse(jsonMatch[0]);
+      } else {
+        // Fallback: create basic structure if AI didn't return JSON
+        result = {
+          text: content,
+          segments: []
+        };
+      }
+    } catch (parseError) {
+      console.error('Error parsing AI response:', parseError);
+      // Create basic structure from raw text
+      const text = data.choices[0].message.content;
+      result = {
+        text: text,
+        segments: []
+      };
+    }
+
+    // If no segments provided, create basic segments (one per sentence)
+    if (!result.segments || result.segments.length === 0) {
+      const sentences = result.text.split(/[.!?]+/).filter((s: string) => s.trim());
+      const avgDuration = 5; // Estimate 5 seconds per sentence
+      result.segments = sentences.map((sentence: string, index: number) => ({
+        start: index * avgDuration,
+        end: (index + 1) * avgDuration,
+        text: sentence.trim()
+      }));
+    }
+
+    console.log(`Transcription successful: ${result.segments.length} segments`);
 
     return new Response(
-      JSON.stringify(formattedResult),
+      JSON.stringify({
+        text: result.text,
+        language: language,
+        segments: result.segments
+      }),
       { 
         headers: { 
           ...corsHeaders, 
@@ -114,7 +143,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: errorMessage,
-        details: 'Failed to transcribe audio. Please check the audio format and try again.'
+        details: 'Failed to transcribe audio. Using Lovable AI (Gemini 2.5 Flash) for transcription.'
       }),
       {
         status: 500,
