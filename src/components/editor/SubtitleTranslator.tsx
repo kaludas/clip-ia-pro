@@ -19,6 +19,7 @@ interface SubtitleTranslatorProps {
 }
 
 const AVAILABLE_LANGUAGES = [
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
   { code: 'es', name: 'Espagnol', flag: '🇪🇸' },
   { code: 'de', name: 'Allemand', flag: '🇩🇪' },
   { code: 'it', name: 'Italien', flag: '🇮🇹' },
