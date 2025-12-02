@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.audio-transcription]
 verify_jwt = false
+
+[functions.translate-subtitles]
+verify_jwt = false
