@@ -34,16 +34,18 @@ const Hero = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/dashboard">
+              <Link to="/auth">
                 <Button variant="hero" size="lg" className="gap-2 w-full sm:w-auto">
                   {t("hero.cta.start")}
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </Link>
-              <Button variant="glass" size="lg" className="gap-2 w-full sm:w-auto">
-                <Play className="w-5 h-5" />
-                {t("hero.cta.demo")}
-              </Button>
+              <Link to="/dashboard">
+                <Button variant="glass" size="lg" className="gap-2 w-full sm:w-auto">
+                  <Play className="w-5 h-5" />
+                  {t("hero.cta.demo")}
+                </Button>
+              </Link>
             </div>
             
             <div className="flex items-center gap-8 pt-4">

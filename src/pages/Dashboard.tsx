@@ -1,14 +1,28 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Link as LinkIcon, Sparkles, Video, Clock } from "lucide-react";
+import { Upload, Link as LinkIcon, Sparkles, Video, Clock, LogOut } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Navigation from "@/components/Navigation";
 import { VideoEditor } from "@/components/VideoEditor";
+import { useAuth } from "@/hooks/useAuth";
 
 const Dashboard = () => {
   const { t, language } = useLanguage();
+  const { user, loading, signOut } = useAuth(true);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
   
   // If video is selected, show editor
   if (selectedVideo) {
@@ -21,14 +35,20 @@ const Dashboard = () => {
       
       <main className="pt-32 pb-20 px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              {t("dashboard.welcome")}{" "}
-              <span className="text-gradient">monshort.com</span>
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              {t("dashboard.subtitle")}
-            </p>
+          <div className="mb-12 flex justify-between items-start">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                {t("dashboard.welcome")}{" "}
+                <span className="text-gradient">monshort.com</span>
+              </h1>
+              <p className="text-xl text-muted-foreground">
+                {user.email}
+              </p>
+            </div>
+            <Button variant="outline" onClick={signOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Déconnexion
+            </Button>
           </div>
           
           {/* Upload Section */}
