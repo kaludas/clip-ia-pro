@@ -72,10 +72,10 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
         throw new Error("La vidéo est vide");
       }
 
-      // Check file size limit (100MB for video transcription)
-      const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+      // Check file size limit (500MB for video transcription)
+      const MAX_SIZE = 500 * 1024 * 1024; // 500MB
       if (blob.size > MAX_SIZE) {
-        toast.error("La vidéo est trop volumineuse pour la transcription automatique. Veuillez importer le fichier audio séparément (section ci-dessous, max 25MB).");
+        toast.error("La vidéo est trop volumineuse pour la transcription automatique (max 500MB). Veuillez importer le fichier audio séparément (section ci-dessous, max 100MB).");
         setIsProcessing(false);
         return;
       }
@@ -172,9 +172,9 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
       return;
     }
 
-    // Check file size (max 25MB)
-    if (file.size > 25 * 1024 * 1024) {
-      toast.error("Fichier trop volumineux. Maximum 25MB.");
+    // Check file size (max 100MB)
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error("Fichier trop volumineux. Maximum 100MB.");
       return;
     }
 
@@ -299,7 +299,7 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
                 {videoUrl ? "Importer un fichier audio/vidéo séparé" : "Cliquez pour importer un fichier audio/vidéo"}
               </p>
               <p className="text-xs text-muted-foreground">
-                MP3, WAV, M4A, MP4, WebM (max 25MB)
+                MP3, WAV, M4A, MP4, WebM (max 100MB)
               </p>
             </div>
             <input
