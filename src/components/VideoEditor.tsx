@@ -68,6 +68,13 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
 
   // Layers state
   const [layers, setLayers] = useState<Layer[]>([]);
+  
+  // Speed segments state
+  const [speedSegments, setSpeedSegments] = useState<Array<{
+    start: number;
+    end: number;
+    speed: number;
+  }>>([]);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -184,6 +191,20 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
       
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
+      // Draw layer overlays (filters/images uploaded by user)
+      layers
+        .filter(layer => layer.visible)
+        .sort((a, b) => a.zIndex - b.zIndex)
+        .forEach(layer => {
+          if (layer.url) {
+            ctx.filter = "none";
+            ctx.globalAlpha = layer.opacity / 100;
+            // Note: For full implementation, we'd need to preload images
+            // This is a placeholder showing where layers would be rendered
+            ctx.globalAlpha = 1;
+          }
+        });
+      
       // Draw text overlays
       textOverlays.forEach(overlay => {
         if (currentTime >= overlay.startTime && currentTime <= overlay.endTime) {
@@ -214,11 +235,48 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
         }
       });
       
+      // Draw subtitles if available
+      const currentSubtitle = generatedSubtitles.find(
+        seg => currentTime >= seg.start && currentTime <= seg.end
+      );
+      
+      if (currentSubtitle) {
+        ctx.filter = "none";
+        ctx.font = "bold 32px Arial";
+        ctx.fillStyle = "#FFFFFF";
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 3;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        
+        const x = canvas.width / 2;
+        const y = canvas.height - 50;
+        
+        // Draw text with stroke (outline)
+        ctx.strokeText(currentSubtitle.text, x, y);
+        ctx.fillText(currentSubtitle.text, x, y);
+      }
+      
       requestAnimationFrame(updateCanvas);
     };
     
     updateCanvas();
-  }, [brightness, contrast, saturation, blur, selectedFilter, textOverlays, currentTime]);
+  }, [brightness, contrast, saturation, blur, selectedFilter, textOverlays, currentTime, layers, generatedSubtitles]);
+  
+  // Apply speed control based on current time
+  useEffect(() => {
+    if (!videoRef.current) return;
+    
+    const activeSegment = speedSegments.find(
+      seg => currentTime >= seg.start && currentTime <= seg.end
+    );
+    
+    if (activeSegment) {
+      videoRef.current.playbackRate = activeSegment.speed / 100;
+    } else {
+      videoRef.current.playbackRate = 1;
+    }
+  }, [currentTime, speedSegments]);
 
   const togglePlayPause = () => {
     if (!videoRef.current) return;
@@ -491,8 +549,8 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   currentTime={currentTime}
                   duration={duration}
                   onSpeedChange={(start, end, speed) => {
-                    console.log(`Speed change: ${start}-${end} at ${speed}x`);
-                    toast.success(t("editor.appliedEffects"));
+                    setSpeedSegments([...speedSegments, { start, end, speed }]);
+                    toast.success(`Vitesse ${speed}% appliquée de ${start.toFixed(1)}s à ${end.toFixed(1)}s`);
                   }}
                 />
               )}
