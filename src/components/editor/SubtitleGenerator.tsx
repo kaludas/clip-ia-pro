@@ -20,6 +20,70 @@ interface SubtitleGeneratorProps {
   onSubtitlesGenerated?: (segments: Segment[]) => void;
 }
 
+// Helper function to extract audio from video
+async function extractAudioFromVideo(videoBlob: Blob): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const videoUrl = URL.createObjectURL(videoBlob);
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    
+    video.onloadedmetadata = async () => {
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const source = audioContext.createMediaElementSource(video);
+        const destination = audioContext.createMediaStreamDestination();
+        source.connect(destination);
+        
+        const mediaRecorder = new MediaRecorder(destination.stream, {
+          mimeType: 'audio/webm;codecs=opus'
+        });
+        
+        const chunks: Blob[] = [];
+        
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            chunks.push(e.data);
+          }
+        };
+        
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(chunks, { type: 'audio/wav' });
+          URL.revokeObjectURL(videoUrl);
+          resolve(audioBlob);
+        };
+        
+        mediaRecorder.start();
+        video.play();
+        
+        video.onended = () => {
+          mediaRecorder.stop();
+          source.disconnect();
+          audioContext.close();
+        };
+        
+        setTimeout(() => {
+          if (mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            source.disconnect();
+            audioContext.close();
+          }
+        }, video.duration * 1000 + 1000);
+        
+      } catch (err) {
+        URL.revokeObjectURL(videoUrl);
+        reject(err);
+      }
+    };
+    
+    video.onerror = () => {
+      URL.revokeObjectURL(videoUrl);
+      reject(new Error('Erreur lors du chargement de la vidéo'));
+    };
+    
+    video.src = videoUrl;
+  });
+}
+
 const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerated }: SubtitleGeneratorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcription, setTranscription] = useState<{
@@ -57,7 +121,7 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
     toast.info("Transcription de la vidéo en cours...");
 
     try {
-      // Fetch video and convert to base64
+      // Fetch video and extract audio only
       console.log('Fetching video from:', videoUrl);
       const response = await fetch(videoUrl);
       
@@ -65,22 +129,29 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
         throw new Error(`Failed to fetch video: ${response.status}`);
       }
       
-      const blob = await response.blob();
-      console.log('Blob size:', blob.size, 'type:', blob.type);
+      const videoBlob = await response.blob();
+      console.log('Video blob size:', videoBlob.size, 'type:', videoBlob.type);
       
-      if (blob.size === 0) {
+      if (videoBlob.size === 0) {
         throw new Error("La vidéo est vide");
       }
 
-      // Check file size limit (500MB for video transcription)
-      const MAX_SIZE = 500 * 1024 * 1024; // 500MB
-      if (blob.size > MAX_SIZE) {
-        toast.error("La vidéo est trop volumineuse pour la transcription automatique (max 500MB). Veuillez importer le fichier audio séparément (section ci-dessous, max 100MB).");
+      // Extract audio from video using Web Audio API
+      console.log('Extracting audio from video...');
+      toast.info("Extraction de l'audio en cours...");
+      
+      const audioBlob = await extractAudioFromVideo(videoBlob);
+      console.log('Extracted audio blob size:', audioBlob.size);
+      
+      // Check file size limit (100MB for audio)
+      const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+      if (audioBlob.size > MAX_SIZE) {
+        toast.error("L'audio extrait est trop volumineux (max 100MB). Veuillez importer un fichier audio plus court.");
         setIsProcessing(false);
         return;
       }
 
-      // Convert blob to base64 using Promise wrapper with better error handling
+      // Convert audio blob to base64
       const base64Audio = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         
@@ -92,7 +163,6 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
               return;
             }
             
-            // Extract base64 data (remove data:mime;base64, prefix)
             const base64Data = result.split(',')[1];
             
             if (!base64Data || base64Data.length === 0) {
@@ -100,7 +170,7 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
               return;
             }
             
-            console.log('Base64 data length:', base64Data.length);
+            console.log('Base64 audio data length:', base64Data.length);
             resolve(base64Data);
           } catch (err) {
             reject(new Error("Erreur lors du traitement des données"));
@@ -108,21 +178,20 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
         };
         
         reader.onerror = () => {
-          reject(new Error("Erreur lors de la lecture de la vidéo"));
+          reject(new Error("Erreur lors de la lecture de l'audio"));
         };
         
-        // Set a timeout for large files
         const timeout = setTimeout(() => {
           reader.abort();
-          reject(new Error("Temps de lecture dépassé - fichier trop volumineux"));
-        }, 30000); // 30 seconds timeout
+          reject(new Error("Temps de lecture dépassé"));
+        }, 30000);
 
         reader.onloadend = () => clearTimeout(timeout);
         
-        reader.readAsDataURL(blob);
+        reader.readAsDataURL(audioBlob);
       });
 
-      const format = blob.type.split('/')[1] || 'mp4';
+      const format = 'wav';
       console.log('Sending transcription request with format:', format);
 
       // Call the edge function
@@ -317,7 +386,7 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
           <div className="flex items-center justify-center gap-2 p-4 glass rounded-lg">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
             <span className="text-sm text-muted-foreground">
-              Analyse en cours avec Whisper AI...
+              Analyse en cours avec Gemini AI...
             </span>
           </div>
         )}

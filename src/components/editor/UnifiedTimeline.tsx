@@ -715,10 +715,20 @@ export const UnifiedTimeline = ({
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-6 bg-background rounded-full" />
                       </div>
                       
-                      <div className={`text-[10px] font-medium ${
-                        layer.visible ? "text-purple-300" : "text-muted-foreground"
-                      } truncate px-2 pointer-events-none`}>
-                        {layer.name}
+                      {/* Layer thumbnail and name */}
+                      <div className="flex items-center gap-2 px-2 pointer-events-none">
+                        {layer.url && (layer.type === 'image' || layer.type === 'overlay') && (
+                          <img 
+                            src={layer.url} 
+                            alt={layer.name}
+                            className="h-8 w-8 object-cover rounded border border-purple-400 shrink-0"
+                          />
+                        )}
+                        <div className={`text-[10px] font-medium ${
+                          layer.visible ? "text-purple-300" : "text-muted-foreground"
+                        } truncate`}>
+                          {layer.name}
+                        </div>
                       </div>
                       
                       {/* End edge handle */}

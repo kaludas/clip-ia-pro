@@ -175,6 +175,28 @@ export const LayerManager = ({ layers, onLayerUpdate, videoDuration }: LayerMana
     );
   };
 
+  const updatePosition = (id: string, axis: 'x' | 'y', value: number) => {
+    onLayerUpdate(layers.map(layer => {
+      if (layer.id === id) {
+        const position = layer.position || { x: 50, y: 50 };
+        return { 
+          ...layer, 
+          position: { 
+            ...position, 
+            [axis]: value 
+          } 
+        };
+      }
+      return layer;
+    }));
+  };
+
+  const updateScale = (id: string, value: number) => {
+    onLayerUpdate(layers.map(layer => 
+      layer.id === id ? { ...layer, scale: value } : layer
+    ));
+  };
+
   const deleteLayer = (id: string) => {
     onLayerUpdate(layers.filter((layer) => layer.id !== id));
     toast.success("Calque supprimé");
@@ -342,7 +364,7 @@ export const LayerManager = ({ layers, onLayerUpdate, videoDuration }: LayerMana
                   </Button>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Label className="text-xs w-16">Opacité</Label>
                     <Slider
@@ -354,6 +376,49 @@ export const LayerManager = ({ layers, onLayerUpdate, videoDuration }: LayerMana
                     />
                     <span className="text-xs text-muted-foreground w-10 text-right">
                       {layer.opacity}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs w-16">Pos X</Label>
+                    <Slider
+                      value={[layer.position?.x || 50]}
+                      onValueChange={(value) => updatePosition(layer.id, 'x', value[0])}
+                      max={100}
+                      step={1}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-muted-foreground w-10 text-right">
+                      {layer.position?.x || 50}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs w-16">Pos Y</Label>
+                    <Slider
+                      value={[layer.position?.y || 50]}
+                      onValueChange={(value) => updatePosition(layer.id, 'y', value[0])}
+                      max={100}
+                      step={1}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-muted-foreground w-10 text-right">
+                      {layer.position?.y || 50}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs w-16">Échelle</Label>
+                    <Slider
+                      value={[(layer.scale || 1) * 100]}
+                      onValueChange={(value) => updateScale(layer.id, value[0] / 100)}
+                      min={10}
+                      max={200}
+                      step={5}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-muted-foreground w-10 text-right">
+                      {((layer.scale || 1) * 100).toFixed(0)}%
                     </span>
                   </div>
                 </div>
