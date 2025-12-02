@@ -599,7 +599,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
         </div>
 
         {/* Right Panel - Tools */}
-        <div className="w-80 border-l border-border/50 bg-muted/20 overflow-y-auto">
+        <div className="w-[420px] border-l border-border/50 bg-muted/20 overflow-y-auto">
           <div className="p-4">
             {/* IA Virale */}
             {activePanel === "viral" && (
@@ -652,20 +652,73 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               </div>
             )}
 
-            {activePanel === "virality" && <ViralityScore videoRef={videoRef} />}
-            {activePanel === "products" && <ProductRecognition videoRef={videoRef} />}
-            {activePanel === "safety" && <ContentSafety videoRef={videoRef} />}
+            {activePanel === "virality" && (
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => setActivePanel("viral")}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Retour
+                </Button>
+                <ViralityScore videoRef={videoRef} />
+              </div>
+            )}
+            
+            {activePanel === "products" && (
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => setActivePanel("viral")}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Retour
+                </Button>
+                <ProductRecognition videoRef={videoRef} />
+              </div>
+            )}
+            
+            {activePanel === "safety" && (
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => setActivePanel("viral")}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Retour
+                </Button>
+                <ContentSafety videoRef={videoRef} />
+              </div>
+            )}
+            
             {activePanel === "security" && (
-              <SecurityChecker
-                audioTitle="Extrait de stream"
-                audioArtist="Streamer"
-                audioUrl={videoUrl || ""}
-                transcript={generatedSubtitles.map(s => s.text).join(' ')}
-                platform="tiktok"
-                onCheckComplete={(results) => {
-                  console.log("Security check results:", results);
-                }}
-              />
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => setActivePanel("viral")}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Retour
+                </Button>
+                <SecurityChecker
+                  audioTitle="Extrait de stream"
+                  audioArtist="Streamer"
+                  audioUrl={videoUrl || ""}
+                  transcript={generatedSubtitles.map(s => s.text).join(' ')}
+                  platform="tiktok"
+                  onCheckComplete={(results) => {
+                    console.log("Security check results:", results);
+                  }}
+                />
+              </div>
             )}
 
             {/* Médias */}
@@ -716,11 +769,22 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
             )}
 
             {activePanel === "templates" && (
-              <TitleTemplates
-                onApplyTemplate={(template, text) => {
-                  addTextOverlay(text, template.animation);
-                }}
-              />
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => setActivePanel("text")}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Retour
+                </Button>
+                <TitleTemplates
+                  onApplyTemplate={(template, text) => {
+                    addTextOverlay(text, template.animation);
+                  }}
+                />
+              </div>
             )}
 
             {/* Effets */}
@@ -759,14 +823,25 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
             )}
 
             {activePanel === "speed" && (
-              <SpeedControl
-                currentTime={currentTime}
-                duration={duration}
-                onSpeedChange={(start, end, speed) => {
-                  setSpeedSegments([...speedSegments, { start, end, speed }]);
-                  toast.success(`Vitesse ${speed}% appliquée de ${start.toFixed(1)}s à ${end.toFixed(1)}s`);
-                }}
-              />
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => setActivePanel("effects")}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Retour
+                </Button>
+                <SpeedControl
+                  currentTime={currentTime}
+                  duration={duration}
+                  onSpeedChange={(start, end, speed) => {
+                    setSpeedSegments([...speedSegments, { start, end, speed }]);
+                    toast.success(`Vitesse ${speed}% appliquée de ${start.toFixed(1)}s à ${end.toFixed(1)}s`);
+                  }}
+                />
+              </div>
             )}
 
             {/* Audio */}
@@ -812,29 +887,51 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
             )}
 
             {activePanel === "audio" && (
-              <AudioTimeline
-                tracks={audioTracks}
-                currentTime={currentTime}
-                totalDuration={duration}
-                onVolumeChange={(trackId, volume) => {
-                  setAudioTracks(audioTracks.map(track =>
-                    track.id === trackId ? { ...track, volume } : track
-                  ));
-                }}
-                onTrackRemove={(trackId) => {
-                  setAudioTracks(audioTracks.filter(track => track.id !== trackId));
-                }}
-              />
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => setActivePanel("music")}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Retour
+                </Button>
+                <AudioTimeline
+                  tracks={audioTracks}
+                  currentTime={currentTime}
+                  totalDuration={duration}
+                  onVolumeChange={(trackId, volume) => {
+                    setAudioTracks(audioTracks.map(track =>
+                      track.id === trackId ? { ...track, volume } : track
+                    ));
+                  }}
+                  onTrackRemove={(trackId) => {
+                    setAudioTracks(audioTracks.filter(track => track.id !== trackId));
+                  }}
+                />
+              </div>
             )}
 
             {activePanel === "normalize" && (
-              <AudioNormalization
-                videoRef={videoRef}
-                onApplyNormalization={(settings) => {
-                  console.log("Applying normalization:", settings);
-                  toast.success("Paramètres de normalisation appliqués");
-                }}
-              />
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => setActivePanel("music")}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Retour
+                </Button>
+                <AudioNormalization
+                  videoRef={videoRef}
+                  onApplyNormalization={(settings) => {
+                    console.log("Applying normalization:", settings);
+                    toast.success("Paramètres de normalisation appliqués");
+                  }}
+                />
+              </div>
             )}
 
             {/* Sous-titres */}
@@ -868,7 +965,18 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
             )}
 
             {activePanel === "translate" && (
-              <SubtitleTranslator subtitles={generatedSubtitles} />
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => setActivePanel("subtitles")}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Retour
+                </Button>
+                <SubtitleTranslator subtitles={generatedSubtitles} />
+              </div>
             )}
 
             {/* Publication */}
@@ -909,12 +1017,49 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               </div>
             )}
 
-            {activePanel === "schedule" && <SchedulePanel />}
-            {activePanel === "analytics" && (
-              <AnalyticsDashboard projectId="demo-project-id" />
+            {activePanel === "schedule" && (
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => setActivePanel("publish")}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Retour
+                </Button>
+                <SchedulePanel />
+              </div>
             )}
+            
+            {activePanel === "analytics" && (
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => setActivePanel("publish")}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Retour
+                </Button>
+                <AnalyticsDashboard projectId="demo-project-id" />
+              </div>
+            )}
+            
             {activePanel === "collaboration" && (
-              <CollaborationPanel projectId="demo-project-id" />
+              <div className="space-y-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => setActivePanel("publish")}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Retour
+                </Button>
+                <CollaborationPanel projectId="demo-project-id" />
+              </div>
             )}
 
             {/* Export */}
