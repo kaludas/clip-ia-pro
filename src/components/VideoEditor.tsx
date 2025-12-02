@@ -74,6 +74,12 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     text: string;
     segments: Array<{ start: number; end: number; text: string; }>;
   } | null>(null);
+
+  // AI features persistence
+  const [viralityAnalysis, setViralityAnalysis] = useState<any>(null);
+  const [productRecognition, setProductRecognition] = useState<any>(null);
+  const [contentSafety, setContentSafety] = useState<any>(null);
+  const [securityCheck, setSecurityCheck] = useState<any>(null);
   
   // Effects state
   const [brightness, setBrightness] = useState(100);
@@ -689,7 +695,11 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Retour
                 </Button>
-                <ViralityScore videoRef={videoRef} />
+                <ViralityScore 
+                  videoRef={videoRef}
+                  existingAnalysis={viralityAnalysis}
+                  onAnalysisComplete={setViralityAnalysis}
+                />
               </div>
             )}
             
@@ -704,7 +714,11 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Retour
                 </Button>
-                <ProductRecognition videoRef={videoRef} />
+                <ProductRecognition 
+                  videoRef={videoRef}
+                  existingRecognition={productRecognition}
+                  onRecognitionComplete={setProductRecognition}
+                />
               </div>
             )}
             
@@ -719,7 +733,11 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Retour
                 </Button>
-                <ContentSafety videoRef={videoRef} />
+                <ContentSafety 
+                  videoRef={videoRef}
+                  existingModeration={contentSafety}
+                  onModerationComplete={setContentSafety}
+                />
               </div>
             )}
             
@@ -740,9 +758,8 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   audioUrl={videoUrl || ""}
                   transcript={generatedSubtitles.map(s => s.text).join(' ')}
                   platform="tiktok"
-                  onCheckComplete={(results) => {
-                    console.log("Security check results:", results);
-                  }}
+                  existingResults={securityCheck}
+                  onCheckComplete={setSecurityCheck}
                 />
               </div>
             )}

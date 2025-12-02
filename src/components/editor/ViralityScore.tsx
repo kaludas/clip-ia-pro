@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,12 +18,21 @@ interface ViralityAnalysis {
 
 interface ViralityScoreProps {
   videoRef: React.RefObject<HTMLVideoElement>;
+  existingAnalysis?: ViralityAnalysis | null;
+  onAnalysisComplete?: (analysis: ViralityAnalysis) => void;
 }
 
-export const ViralityScore = ({ videoRef }: ViralityScoreProps) => {
+export const ViralityScore = ({ videoRef, existingAnalysis, onAnalysisComplete }: ViralityScoreProps) => {
   const { language } = useLanguage();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState<ViralityAnalysis | null>(null);
+  const [analysis, setAnalysis] = useState<ViralityAnalysis | null>(existingAnalysis || null);
+
+  // Sync with existing analysis
+  useEffect(() => {
+    if (existingAnalysis && !analysis) {
+      setAnalysis(existingAnalysis);
+    }
+  }, [existingAnalysis]);
 
   const captureCurrentFrame = async (): Promise<string> => {
     const video = videoRef.current;
@@ -60,6 +69,9 @@ export const ViralityScore = ({ videoRef }: ViralityScoreProps) => {
       if (error) throw error;
 
       setAnalysis(data);
+      if (onAnalysisComplete) {
+        onAnalysisComplete(data);
+      }
       
       const emoji = data.score >= 70 ? "🔥" : data.score >= 50 ? "👍" : "💡";
       toast.success(
