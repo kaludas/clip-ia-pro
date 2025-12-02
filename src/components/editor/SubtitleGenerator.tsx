@@ -20,67 +20,17 @@ interface SubtitleGeneratorProps {
   onSubtitlesGenerated?: (segments: Segment[]) => void;
 }
 
-// Helper function to extract audio from video
-async function extractAudioFromVideo(videoBlob: Blob): Promise<Blob> {
+// Helper function to convert blob to base64
+async function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
-    const videoUrl = URL.createObjectURL(videoBlob);
-    const video = document.createElement('video');
-    video.crossOrigin = 'anonymous';
-    
-    video.onloadedmetadata = async () => {
-      try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const source = audioContext.createMediaElementSource(video);
-        const destination = audioContext.createMediaStreamDestination();
-        source.connect(destination);
-        
-        const mediaRecorder = new MediaRecorder(destination.stream, {
-          mimeType: 'audio/webm;codecs=opus'
-        });
-        
-        const chunks: Blob[] = [];
-        
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) {
-            chunks.push(e.data);
-          }
-        };
-        
-        mediaRecorder.onstop = () => {
-          const audioBlob = new Blob(chunks, { type: 'audio/wav' });
-          URL.revokeObjectURL(videoUrl);
-          resolve(audioBlob);
-        };
-        
-        mediaRecorder.start();
-        video.play();
-        
-        video.onended = () => {
-          mediaRecorder.stop();
-          source.disconnect();
-          audioContext.close();
-        };
-        
-        setTimeout(() => {
-          if (mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-            source.disconnect();
-            audioContext.close();
-          }
-        }, video.duration * 1000 + 1000);
-        
-      } catch (err) {
-        URL.revokeObjectURL(videoUrl);
-        reject(err);
-      }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(',')[1];
+      resolve(base64);
     };
-    
-    video.onerror = () => {
-      URL.revokeObjectURL(videoUrl);
-      reject(new Error('Erreur lors du chargement de la vidéo'));
-    };
-    
-    video.src = videoUrl;
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(blob);
   });
 }
 
@@ -136,70 +86,30 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
         throw new Error("La vidéo est vide");
       }
 
-      // Extract audio from video using Web Audio API
-      console.log('Extracting audio from video...');
-      toast.info("Extraction de l'audio en cours...");
-      
-      const audioBlob = await extractAudioFromVideo(videoBlob);
-      console.log('Extracted audio blob size:', audioBlob.size);
-      
-      // Check file size limit (100MB for audio)
-      const MAX_SIZE = 100 * 1024 * 1024; // 100MB
-      if (audioBlob.size > MAX_SIZE) {
-        toast.error("L'audio extrait est trop volumineux (max 100MB). Veuillez importer un fichier audio plus court.");
+      // Check file size limit (50MB for video to Gemini)
+      const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+      if (videoBlob.size > MAX_SIZE) {
+        toast.error("La vidéo est trop volumineuse (max 50MB). Veuillez utiliser une vidéo plus courte.");
         setIsProcessing(false);
         return;
       }
 
-      // Convert audio blob to base64
-      const base64Audio = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        
-        reader.onload = () => {
-          try {
-            const result = reader.result as string;
-            if (!result) {
-              reject(new Error("Échec de la lecture du fichier"));
-              return;
-            }
-            
-            const base64Data = result.split(',')[1];
-            
-            if (!base64Data || base64Data.length === 0) {
-              reject(new Error("Données base64 vides"));
-              return;
-            }
-            
-            console.log('Base64 audio data length:', base64Data.length);
-            resolve(base64Data);
-          } catch (err) {
-            reject(new Error("Erreur lors du traitement des données"));
-          }
-        };
-        
-        reader.onerror = () => {
-          reject(new Error("Erreur lors de la lecture de l'audio"));
-        };
-        
-        const timeout = setTimeout(() => {
-          reader.abort();
-          reject(new Error("Temps de lecture dépassé"));
-        }, 30000);
+      // Convert video blob to base64
+      console.log('Converting video to base64...');
+      const base64Video = await blobToBase64(videoBlob);
+      console.log('Base64 video data length:', base64Video.length);
 
-        reader.onloadend = () => clearTimeout(timeout);
-        
-        reader.readAsDataURL(audioBlob);
-      });
-
-      const format = 'wav';
+      // Determine video format from blob type
+      const format = videoBlob.type.split('/')[1] || 'mp4';
       console.log('Sending transcription request with format:', format);
 
-      // Call the edge function
+      // Call the edge function with video directly
       const { data, error } = await supabase.functions.invoke('audio-transcription', {
         body: { 
-          audio: base64Audio,
+          video: base64Video,
           language: selectedLanguage,
-          format
+          format,
+          mimeType: videoBlob.type
         }
       });
 

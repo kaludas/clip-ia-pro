@@ -12,22 +12,30 @@ serve(async (req) => {
   }
 
   try {
-    const { audio, language = 'fr', format = 'webm' } = await req.json();
+    const { audio, video, language = 'fr', format = 'webm', mimeType } = await req.json();
     
-    if (!audio) {
-      throw new Error('No audio data provided');
+    const mediaData = video || audio;
+    const isVideo = !!video;
+    
+    if (!mediaData) {
+      throw new Error('No media data provided');
     }
 
-    console.log('Processing audio transcription with Lovable AI...');
+    console.log('Processing transcription with Lovable AI...');
     console.log('Language:', language);
     console.log('Format:', format);
+    console.log('Media type:', isVideo ? 'video' : 'audio');
+    console.log('MIME type:', mimeType || (isVideo ? `video/${format}` : `audio/${format}`));
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Use Gemini 2.5 Flash for audio transcription
+    // Determine the correct MIME type
+    const actualMimeType = mimeType || (isVideo ? `video/${format}` : `audio/${format}`);
+
+    // Use Gemini 2.5 Flash for transcription - supports both audio and video
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -38,30 +46,34 @@ serve(async (req) => {
         model: 'google/gemini-2.5-flash',
         messages: [
           {
-            role: 'system',
-            content: `You are a professional audio transcription assistant. Transcribe the audio content accurately in ${language}. Format your response as a JSON object with this structure:
-{
-  "text": "full transcription",
-  "segments": [
-    {"start": 0, "end": 5, "text": "segment text"},
-    ...
-  ]
-}
-
-Create segments of approximately 3-5 seconds each. Estimate timing based on speech pace. Return ONLY the JSON, no other text.`
-          },
-          {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: 'Please transcribe this audio file:'
+                text: `Transcribe the audio/speech from this ${isVideo ? 'video' : 'audio'} file in ${language}. 
+                
+IMPORTANT: Listen carefully to what is being said and transcribe EXACTLY what you hear. Do not make up content.
+
+Return your response as a JSON object with this exact structure:
+{
+  "text": "the complete transcription of everything said",
+  "segments": [
+    {"start": 0.0, "end": 3.5, "text": "first segment of speech"},
+    {"start": 3.5, "end": 7.2, "text": "second segment of speech"},
+    ...
+  ]
+}
+
+Rules:
+- Create segments of 3-8 seconds based on natural speech pauses
+- Use accurate timestamps based on when words are spoken
+- Include ALL spoken content
+- Return ONLY the JSON, no other text or explanation`
               },
               {
-                type: 'audio',
-                audio: {
-                  data: audio,
-                  format: format
+                type: 'image_url',
+                image_url: {
+                  url: `data:${actualMimeType};base64,${mediaData}`
                 }
               }
             ]
@@ -143,7 +155,7 @@ Create segments of approximately 3-5 seconds each. Estimate timing based on spee
     return new Response(
       JSON.stringify({ 
         error: errorMessage,
-        details: 'Failed to transcribe audio. Using Lovable AI (Gemini 2.5 Flash) for transcription.'
+        details: 'Failed to transcribe. Using Lovable AI (Gemini 2.5 Flash).'
       }),
       {
         status: 500,
