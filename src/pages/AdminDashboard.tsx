@@ -65,6 +65,12 @@ export default function AdminDashboard() {
     }
   }, [isAdmin]);
 
+  useEffect(() => {
+    if (isAdmin) {
+      document.title = "Administration MonShort - Analytics & revenus";
+    }
+  }, [isAdmin]);
+
   const fetchDashboardData = async () => {
     try {
       // Fetch total users (from profiles)
@@ -216,9 +222,9 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen pt-20 pb-12 bg-background">
+    <main className="min-h-screen pt-20 pb-12 bg-background">
       <div className="container max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between mb-8">
+        <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -233,10 +239,66 @@ export default function AdminDashboard() {
           <Button variant="outline" onClick={fetchDashboardData}>
             Actualiser
           </Button>
-        </div>
+        </header>
+
+        <section
+          aria-label="Résumé de l'activité"
+          className="grid gap-4 lg:grid-cols-[2fr,1.4fr] mb-8"
+        >
+          <Card className="glass p-6">
+            <h2 className="text-xl font-semibold mb-2">Vue globale de ton SaaS</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Suis en temps réel la croissance de MonShort : nombre d'utilisateurs,
+              sessions actives, trafic et revenus générés par tes abonnements.
+            </p>
+            <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
+              <li>
+                <strong>Utilisateurs</strong> = comptes créés (table <code>profiles</code>).
+              </li>
+              <li>
+                <strong>Sessions</strong> = connexions à l'app (table <code>site_sessions</code>).
+              </li>
+              <li>
+                <strong>Pages vues</strong> = navigation dans l'interface (table <code>page_visits</code>).
+              </li>
+              <li>
+                <strong>Revenus</strong> = achats d'abonnements (table <code>purchases</code>).
+              </li>
+            </ul>
+          </Card>
+
+          <Card className="glass p-6">
+            <h2 className="text-xl font-semibold mb-2">Actions rapides</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Depuis ce tableau de bord, tu peux vérifier la santé du business, identifier
+              les pages les plus performantes et suivre les plans achetés.
+            </p>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-xl bg-muted/40 p-3">
+                <p className="text-xs text-muted-foreground mb-1">Monitoring</p>
+                <p className="font-medium">Pointe un pic de trafic ou de revenu.</p>
+              </div>
+              <div className="rounded-xl bg-muted/40 p-3">
+                <p className="text-xs text-muted-foreground mb-1">Produit</p>
+                <p className="font-medium">Repère les pages clés visitées.</p>
+              </div>
+              <div className="rounded-xl bg-muted/40 p-3">
+                <p className="text-xs text-muted-foreground mb-1">Support</p>
+                <p className="font-medium">Enquête en cas de baisse soudaine.</p>
+              </div>
+              <div className="rounded-xl bg-muted/40 p-3">
+                <p className="text-xs text-muted-foreground mb-1">Growth</p>
+                <p className="font-medium">Mesure l'impact de campagnes.</p>
+              </div>
+            </div>
+          </Card>
+        </section>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <section
+          aria-label="Statistiques globales"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8"
+        >
           <Card className="glass p-6">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-primary/10 rounded-lg">
@@ -296,108 +358,110 @@ export default function AdminDashboard() {
               </div>
             </div>
           </Card>
-        </div>
+        </section>
 
         {/* Charts and Tables */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
-            <TabsTrigger value="purchases">Achats</TabsTrigger>
-            <TabsTrigger value="pages">Pages populaires</TabsTrigger>
-          </TabsList>
+        <section aria-label="Données détaillées">
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+              <TabsTrigger value="purchases">Achats</TabsTrigger>
+              <TabsTrigger value="pages">Pages populaires</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="glass p-6">
+                  <h3 className="text-lg font-semibold mb-4">Revenus (7 derniers jours)</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={revenueData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="day" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Card>
+
+                <Card className="glass p-6">
+                  <h3 className="text-lg font-semibold mb-4">Sessions (7 derniers jours)</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={sessionsData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="day" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="sessions" fill="#10b981" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="purchases">
               <Card className="glass p-6">
-                <h3 className="text-lg font-semibold mb-4">Revenus (7 derniers jours)</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={revenueData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
+                <h3 className="text-lg font-semibold mb-4">Achats récents</h3>
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-3">
+                    {recentPurchases.map((purchase) => (
+                      <div
+                        key={purchase.id}
+                        className="flex items-center justify-between p-4 bg-muted/30 rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">{purchase.plan_type}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {purchase.profiles?.username || "Utilisateur inconnu"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(purchase.purchased_at)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-lg">
+                            {Number(purchase.amount).toFixed(2)} {purchase.currency}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {purchase.payment_method || "N/A"}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               </Card>
+            </TabsContent>
 
+            <TabsContent value="pages">
               <Card className="glass p-6">
-                <h3 className="text-lg font-semibold mb-4">Sessions (7 derniers jours)</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={sessionsData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="sessions" fill="#10b981" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="purchases">
-            <Card className="glass p-6">
-              <h3 className="text-lg font-semibold mb-4">Achats récents</h3>
-              <ScrollArea className="h-[500px]">
+                <h3 className="text-lg font-semibold mb-4">Pages les plus visitées</h3>
                 <div className="space-y-3">
-                  {recentPurchases.map((purchase) => (
+                  {topPages.map((page: any, index) => (
                     <div
-                      key={purchase.id}
+                      key={page.path}
                       className="flex items-center justify-between p-4 bg-muted/30 rounded-lg"
                     >
-                      <div>
-                        <p className="font-medium">{purchase.plan_type}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {purchase.profiles?.username || "Utilisateur inconnu"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(purchase.purchased_at)}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="font-medium">{page.path}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-lg">
-                          {Number(purchase.amount).toFixed(2)} {purchase.currency}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {purchase.payment_method || "N/A"}
-                        </p>
+                      <div className="flex items-center gap-2">
+                        <Eye className="w-4 h-4 text-muted-foreground" />
+                        <p className="font-semibold">{page.visits} vues</p>
                       </div>
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="pages">
-            <Card className="glass p-6">
-              <h3 className="text-lg font-semibold mb-4">Pages les plus visitées</h3>
-              <div className="space-y-3">
-                {topPages.map((page: any, index) => (
-                  <div
-                    key={page.path}
-                    className="flex items-center justify-between p-4 bg-muted/30 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <p className="font-medium">{page.path}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Eye className="w-4 h-4 text-muted-foreground" />
-                      <p className="font-semibold">{page.visits} vues</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
