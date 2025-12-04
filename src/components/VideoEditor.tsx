@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, Save, Sparkles, Download, ChevronLeft, Volume2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Save, Sparkles, Download, ChevronLeft, Volume2, Undo2, Redo2, History, Bookmark } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { UnifiedTimeline } from "./editor/UnifiedTimeline";
 import { EffectsPanel } from "./editor/EffectsPanel";
@@ -23,6 +23,9 @@ import { ViralityScore } from "./editor/ViralityScore";
 import { MusicLibrary } from "./editor/MusicLibrary";
 import { AudioTimeline } from "./editor/AudioTimeline";
 import { AudioNormalization } from "./editor/AudioNormalization";
+import { EditorHistoryPanel } from "./editor/EditorHistoryPanel";
+import { TimelineMarkers } from "./editor/TimelineMarkers";
+import { useEditorHistory, EditorState } from "@/hooks/useEditorHistory";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +47,15 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
   const [volume, setVolume] = useState(100);
-  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration" | "subtitles" | "translate" | "publish" | "security" | "products" | "safety" | "virality" | "music" | "audio" | "normalize">("viral");
+  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration" | "subtitles" | "translate" | "publish" | "security" | "products" | "safety" | "virality" | "music" | "audio" | "normalize" | "history" | "markers">("viral");
+  
+  // Markers state
+  const [markers, setMarkers] = useState<Array<{
+    id: string;
+    time: number;
+    label: string;
+    color: string;
+  }>>([]);
   
   // Subtitles state
   const [generatedSubtitles, setGeneratedSubtitles] = useState<Array<{
@@ -129,6 +140,32 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     startTime: number;
     duration: number;
   }>>([]);
+
+  // Initialize editor history
+  const initialState: EditorState = {
+    brightness,
+    contrast,
+    saturation,
+    blur,
+    selectedFilter,
+    trimStart,
+    trimEnd,
+    textOverlays,
+    layers,
+    speedSegments,
+    audioTracks,
+    videoSegments,
+    markers
+  };
+
+  const {
+    saveState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    getHistoryInfo
+  } = useEditorHistory(initialState);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -222,14 +259,14 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
         case "KeyZ": {
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
-            // Réinitialise les effets sans recréer la fonction handleReset
-            setBrightness(100);
-            setContrast(100);
-            setSaturation(100);
-            setBlur(0);
-            setSelectedFilter("none");
-            setTextOverlays([]);
-            toast.success(t("editor.reset"));
+            handleUndo();
+          }
+          break;
+        }
+        case "KeyY": {
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            handleRedo();
           }
           break;
         }
@@ -432,6 +469,57 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     }
   };
 
+  const handleUndo = () => {
+    const previousState = undo();
+    if (previousState) {
+      applyState(previousState);
+      toast.success("Annulé");
+    }
+  };
+
+  const handleRedo = () => {
+    const nextState = redo();
+    if (nextState) {
+      applyState(nextState);
+      toast.success("Rétabli");
+    }
+  };
+
+  const applyState = (state: EditorState) => {
+    setBrightness(state.brightness);
+    setContrast(state.contrast);
+    setSaturation(state.saturation);
+    setBlur(state.blur);
+    setSelectedFilter(state.selectedFilter);
+    setTrimStart(state.trimStart);
+    setTrimEnd(state.trimEnd);
+    setTextOverlays(state.textOverlays);
+    setLayers(state.layers);
+    setSpeedSegments(state.speedSegments);
+    setAudioTracks(state.audioTracks);
+    setVideoSegments(state.videoSegments);
+    setMarkers(state.markers);
+  };
+
+  const saveCurrentState = (action: string) => {
+    const currentState: EditorState = {
+      brightness,
+      contrast,
+      saturation,
+      blur,
+      selectedFilter,
+      trimStart,
+      trimEnd,
+      textOverlays,
+      layers,
+      speedSegments,
+      audioTracks,
+      videoSegments,
+      markers
+    };
+    saveState(currentState, action);
+  };
+
   const handleReset = () => {
     setBrightness(100);
     setContrast(100);
@@ -439,6 +527,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
     setBlur(0);
     setSelectedFilter("none");
     setTextOverlays([]);
+    saveCurrentState("reset");
     toast.success(t("editor.reset"));
   };
 
@@ -455,6 +544,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
       endTime: Math.min(currentTime + 3, duration),
     };
     setTextOverlays([...textOverlays, newOverlay]);
+    saveCurrentState("add_text");
     toast.success(t("editor.textAdded"));
   };
 
@@ -565,6 +655,24 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
             <Download className="w-5 h-5" />
             <span>Export</span>
           </Button>
+          <Button
+            variant={activePanel === "history" ? "default" : "ghost"}
+            onClick={() => setActivePanel("history")}
+            className="w-16 h-16 flex-col gap-1 text-xs"
+            title="Historique"
+          >
+            <History className="w-5 h-5" />
+            <span>Histo</span>
+          </Button>
+          <Button
+            variant={activePanel === "markers" ? "default" : "ghost"}
+            onClick={() => setActivePanel("markers")}
+            className="w-16 h-16 flex-col gap-1 text-xs"
+            title="Marqueurs"
+          >
+            <Bookmark className="w-5 h-5" />
+            <span>Mark</span>
+          </Button>
         </div>
 
         {/* Center - Video Preview & Timeline */}
@@ -607,6 +715,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               onTrimChange={(start, end) => {
                 setTrimStart(start);
                 setTrimEnd(end);
+                saveCurrentState("trim");
               }}
               onSkip={(seconds) => {
                 if (videoRef.current) {
@@ -620,29 +729,35 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                 setAudioTracks(audioTracks.map(track =>
                   track.id === id ? { ...track, volume: vol } : track
                 ));
+                saveCurrentState("audio_volume");
               }}
               onAudioRemove={(id) => {
                 setAudioTracks(audioTracks.filter(track => track.id !== id));
+                saveCurrentState("remove_audio");
                 toast.success("Piste audio supprimée");
               }}
               onAudioTimeChange={(id, startTime, duration) => {
                 setAudioTracks(audioTracks.map(track =>
                   track.id === id ? { ...track, startTime, duration } : track
                 ));
+                saveCurrentState("audio_position");
               }}
               onLayerToggle={(id) => {
                 setLayers(layers.map(layer =>
                   layer.id === id ? { ...layer, visible: !layer.visible } : layer
                 ));
+                saveCurrentState("layer_toggle");
               }}
               onLayerRemove={(id) => {
                 setLayers(layers.filter(layer => layer.id !== id));
+                saveCurrentState("remove_layer");
                 toast.success("Calque supprimé");
               }}
               onLayerTimeChange={(id, startTime, duration) => {
                 setLayers(layers.map(layer =>
                   layer.id === id ? { ...layer, startTime, duration } : layer
                 ));
+                saveCurrentState("layer_position");
               }}
               onVideoSplit={(time) => {
                 if (videoSegments.length === 0) {
@@ -657,6 +772,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                     duration: trimEnd - time
                   };
                   setVideoSegments([seg1, seg2]);
+                  saveCurrentState("split_video");
                   toast.success("✂️ Vidéo coupée en 2 segments");
                 } else {
                   const segmentIndex = videoSegments.findIndex(
@@ -680,6 +796,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                     
                     newSegments.splice(segmentIndex, 1, seg1, seg2);
                     setVideoSegments(newSegments);
+                    saveCurrentState("split_segment");
                     toast.success(`✂️ Segment ${segmentIndex + 1} coupé`);
                   } else {
                     toast.error("Position de coupe invalide");
@@ -688,12 +805,14 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               }}
               onVideoSegmentRemove={(id) => {
                 setVideoSegments(videoSegments.filter(seg => seg.id !== id));
+                saveCurrentState("remove_segment");
                 toast.success("🗑️ Segment supprimé");
               }}
               onVideoSegmentTimeChange={(id, startTime, duration) => {
                 setVideoSegments(videoSegments.map(seg =>
                   seg.id === id ? { ...seg, startTime, duration } : seg
                 ));
+                saveCurrentState("segment_position");
               }}
               videoSegments={videoSegments}
               textOverlays={textOverlays}
@@ -701,13 +820,16 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
               translatedSubtitles={translatedSubtitles}
               onTextOverlayRemove={(id) => {
                 setTextOverlays(textOverlays.filter(text => text.id !== id));
+                saveCurrentState("remove_text");
                 toast.success("Texte supprimé");
               }}
               onTextOverlayTimeChange={(id, startTime, endTime) => {
                 setTextOverlays(textOverlays.map(text =>
                   text.id === id ? { ...text, startTime, endTime } : text
                 ));
+                saveCurrentState("text_position");
               }}
+              markers={markers}
             />
           </div>
         </div>
@@ -1213,6 +1335,45 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   canvasRef={canvasRef}
                   trimStart={trimStart}
                   trimEnd={trimEnd}
+                />
+              </div>
+            )}
+
+            {/* History */}
+            {activePanel === "history" && (
+              <div className="space-y-4">
+                <EditorHistoryPanel
+                  historyInfo={getHistoryInfo()}
+                  onUndo={handleUndo}
+                  onRedo={handleRedo}
+                />
+              </div>
+            )}
+
+            {/* Markers */}
+            {activePanel === "markers" && (
+              <div className="space-y-4">
+                <TimelineMarkers
+                  markers={markers}
+                  currentTime={currentTime}
+                  duration={duration}
+                  onAddMarker={(marker) => {
+                    const newMarker = {
+                      ...marker,
+                      id: `marker-${Date.now()}`
+                    };
+                    setMarkers([...markers, newMarker]);
+                    saveCurrentState("add_marker");
+                  }}
+                  onRemoveMarker={(id) => {
+                    setMarkers(markers.filter(m => m.id !== id));
+                    saveCurrentState("remove_marker");
+                  }}
+                  onSeekToMarker={(time) => {
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = time;
+                    }
+                  }}
                 />
               </div>
             )}
