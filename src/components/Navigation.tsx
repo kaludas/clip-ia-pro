@@ -1,10 +1,23 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Video, Sparkles, Globe } from "lucide-react";
+import { Video, Sparkles, Globe, User, Shield } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const Navigation = () => {
   const { language, setLanguage, t } = useLanguage();
+  const { user, signOut } = useAuth();
+  const { isAdmin } = useUserRole();
   
   const toggleLanguage = () => {
     setLanguage(language === "fr" ? "en" : "fr");
@@ -44,17 +57,70 @@ const Navigation = () => {
               {language.toUpperCase()}
             </span>
           </Button>
-          <Link to="/dashboard">
-            <Button variant="ghost" className="hidden md:inline-flex">
-              {t("nav.dashboard")}
-            </Button>
-          </Link>
-          <Link to="/dashboard">
-            <Button variant="hero" className="gap-2">
-              <Sparkles className="w-4 h-4" />
-              {t("nav.start")}
-            </Button>
-          </Link>
+
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      {user.email?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden md:inline">{user.email?.split("@")[0]}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard" className="cursor-pointer">
+                    Dashboard
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="cursor-pointer">
+                    <User className="w-4 h-4 mr-2" />
+                    Mon profil
+                  </Link>
+                </DropdownMenuItem>
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="cursor-pointer">
+                        <Shield className="w-4 h-4 mr-2" />
+                        Admin Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/sessions" className="cursor-pointer">
+                        Sessions
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut} className="cursor-pointer">
+                  Déconnexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Link to="/auth">
+                <Button variant="ghost" className="hidden md:inline-flex">
+                  {t("nav.dashboard")}
+                </Button>
+              </Link>
+              <Link to="/auth">
+                <Button variant="hero" className="gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  {t("nav.start")}
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>
