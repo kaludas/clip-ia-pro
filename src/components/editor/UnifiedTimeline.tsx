@@ -53,6 +53,13 @@ interface VideoSegment {
   duration: number;
 }
 
+interface Marker {
+  id: string;
+  time: number;
+  label: string;
+  color: string;
+}
+
 const SNAP_THRESHOLD = 0.5; // seconds - magnetic snapping distance
 
 interface UnifiedTimelineProps {
@@ -68,6 +75,7 @@ interface UnifiedTimelineProps {
   subtitles: Subtitle[];
   translatedSubtitles?: Record<string, Subtitle[]>;
   videoSegments?: VideoSegment[];
+  markers?: Marker[];
   
   onSeek: (time: number) => void;
   onPlayPause: () => void;
@@ -100,6 +108,7 @@ export const UnifiedTimeline = ({
   subtitles,
   translatedSubtitles = {},
   videoSegments = [],
+  markers = [],
   onSeek,
   onPlayPause,
   onVolumeChange,
@@ -446,6 +455,33 @@ export const UnifiedTimeline = ({
                 width: `${trimEndPercentage - trimStartPercentage}%`
               }}
             />
+
+            {/* Timeline Markers */}
+            {markers.map((marker) => {
+              const markerPercentage = duration > 0 ? (marker.time / duration) * 100 : 0;
+              
+              return (
+                <div
+                  key={marker.id}
+                  className="absolute inset-y-0 w-0.5 cursor-pointer group/marker z-10"
+                  style={{
+                    left: `${markerPercentage}%`,
+                    backgroundColor: marker.color
+                  }}
+                  title={`${marker.label} (${formatTime(marker.time)})`}
+                >
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full mb-1 opacity-0 group-hover/marker:opacity-100 transition-opacity">
+                    <div className="px-2 py-1 bg-popover text-popover-foreground text-[10px] rounded shadow-lg whitespace-nowrap border border-border">
+                      {marker.label}
+                    </div>
+                  </div>
+                  <div
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full"
+                    style={{ backgroundColor: marker.color }}
+                  />
+                </div>
+              );
+            })}
 
             {/* Video Segments (if split) */}
             {videoSegments.map((segment, index) => {
