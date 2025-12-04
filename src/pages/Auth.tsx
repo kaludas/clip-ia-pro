@@ -17,6 +17,14 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
 
+  const isPasswordStrong = (pwd: string) => {
+    const hasMinLength = pwd.length >= 8;
+    const hasUpper = /[A-Z]/.test(pwd);
+    const hasLower = /[a-z]/.test(pwd);
+    const hasNumber = /[0-9]/.test(pwd);
+    return hasMinLength && hasUpper && hasLower && hasNumber;
+  };
+
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -39,8 +47,8 @@ export default function Auth() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password.length < 6) {
-      toast.error("Le mot de passe doit contenir au moins 6 caractères");
+    if (!isPasswordStrong(password)) {
+      toast.error("Le mot de passe doit faire au moins 8 caractères et contenir une majuscule, une minuscule et un chiffre.");
       return;
     }
 
@@ -274,7 +282,7 @@ export default function Auth() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Minimum 6 caractères
+                    Minimum 8 caractères, avec majuscule, minuscule et chiffre
                   </p>
                 </div>
 
