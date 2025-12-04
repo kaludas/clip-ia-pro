@@ -86,10 +86,10 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
         throw new Error("La vidéo est vide");
       }
 
-      // Check file size limit (50MB for video to Gemini)
-      const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+      // Check file size limit (150MB for video to Gemini)
+      const MAX_SIZE = 150 * 1024 * 1024; // 150MB
       if (videoBlob.size > MAX_SIZE) {
-        toast.error("La vidéo est trop volumineuse (max 50MB). Veuillez utiliser une vidéo plus courte.");
+        toast.error("La vidéo est trop volumineuse (max 150MB). Veuillez utiliser une vidéo plus courte.");
         setIsProcessing(false);
         return;
       }
@@ -151,11 +151,11 @@ const SubtitleGenerator = ({ videoUrl, existingTranscription, onSubtitlesGenerat
       return;
     }
 
-    // Check file size (max 100MB)
-    if (file.size > 100 * 1024 * 1024) {
-      toast.error("Fichier trop volumineux. Maximum 100MB.");
-      return;
-    }
+     // Check file size (max 150MB)
+     if (file.size > 150 * 1024 * 1024) {
+       toast.error("Fichier trop volumineux. Maximum 150MB.");
+       return;
+     }
 
     setIsProcessing(true);
     toast.info("Transcription en cours...");

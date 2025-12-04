@@ -21,11 +21,14 @@ export function useUserRole() {
         const { data, error } = await supabase
           .from("user_roles")
           .select("role")
-          .eq("user_id", user.id)
-          .single();
+          .eq("user_id", user.id);
 
         if (error) throw error;
-        setRole(data?.role as UserRole || "user");
+
+        const roles = (data || []).map((row: { role: string }) => row.role);
+        const newRole: UserRole = roles.includes("admin") ? "admin" : "user";
+
+        setRole(newRole);
       } catch (error) {
         console.error("Error fetching user role:", error);
         setRole("user"); // Default to user role
