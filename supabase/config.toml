@@ -35,3 +35,9 @@ verify_jwt = false
 
 [functions.translate-subtitles]
 verify_jwt = false
+
+[functions.audio-normalization]
+verify_jwt = false
+
+[functions.generate-image]
+verify_jwt = false

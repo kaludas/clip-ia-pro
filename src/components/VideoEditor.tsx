@@ -25,6 +25,7 @@ import { AudioTimeline } from "./editor/AudioTimeline";
 import { AudioNormalization } from "./editor/AudioNormalization";
 import { EditorHistoryPanel } from "./editor/EditorHistoryPanel";
 import { TimelineMarkers } from "./editor/TimelineMarkers";
+import { AIImageGenerator } from "./editor/AIImageGenerator";
 import { useEditorHistory, EditorState } from "@/hooks/useEditorHistory";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -47,7 +48,7 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
   const [volume, setVolume] = useState(100);
-  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration" | "subtitles" | "translate" | "publish" | "security" | "products" | "safety" | "virality" | "music" | "audio" | "normalize" | "history" | "markers">("viral");
+  const [activePanel, setActivePanel] = useState<"effects" | "text" | "export" | "viral" | "speed" | "layers" | "templates" | "schedule" | "analytics" | "collaboration" | "subtitles" | "translate" | "publish" | "security" | "products" | "safety" | "virality" | "music" | "audio" | "normalize" | "history" | "markers" | "imagegen">("viral");
   
   // Markers state
   const [markers, setMarkers] = useState<Array<{
@@ -878,6 +879,13 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   >
                     ©️ Copyright
                   </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={() => setActivePanel("imagegen")}
+                  >
+                    🎨 Générer images IA
+                  </Button>
                 </div>
                 <div className="mt-6">
               <ViralMomentDetector 
@@ -969,6 +977,32 @@ export const VideoEditor = ({ videoUrl }: VideoEditorProps) => {
                   onCheckComplete={setSecurityCheck}
                 />
               </div>
+            )}
+
+            {activePanel === "imagegen" && (
+              <AIImageGenerator
+                onBack={() => setActivePanel("viral")}
+                onImageGenerated={(imageUrl) => {
+                  // Add generated image as a layer
+                  const newLayer: Layer = {
+                    id: `layer-ai-${Date.now()}`,
+                    name: `Image IA ${layers.length + 1}`,
+                    type: 'image',
+                    url: imageUrl,
+                    visible: true,
+                    opacity: 100,
+                    position: { x: 50, y: 50 },
+                    scale: 50,
+                    rotation: 0,
+                    zIndex: layers.length + 1,
+                    startTime: currentTime,
+                    duration: Math.min(5, duration - currentTime),
+                  };
+                  setLayers([...layers, newLayer]);
+                  saveCurrentState("add_ai_image");
+                  toast.success("Image IA ajoutée comme calque");
+                }}
+              />
             )}
 
             {/* Médias */}
