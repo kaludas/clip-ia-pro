@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Link as LinkIcon, Sparkles, Video, Clock, LogOut } from "lucide-react";
+import { Upload, Link as LinkIcon, Sparkles, Video, Clock, LogOut, Wand2, Pencil, Play, Image as ImageIcon } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Navigation from "@/components/Navigation";
 import { VideoEditor } from "@/components/VideoEditor";
 import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent } from "@/components/ui/card";
 
 const Dashboard = () => {
   const { t, language } = useLanguage();
@@ -129,6 +130,72 @@ const Dashboard = () => {
                   </Button>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* AI Creative Tools Section */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-primary" />
+              Outils IA Créatifs
+            </h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Image Generation */}
+              <Card className="glass-hover border-border/50 overflow-hidden group cursor-pointer hover:border-primary/50 transition-all">
+                <div className="aspect-video bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMCAyMGgyME0yMCAwdjIwIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==')] opacity-30" />
+                  <div className="relative z-10 bg-primary/20 backdrop-blur-sm p-4 rounded-2xl group-hover:scale-110 transition-transform">
+                    <Wand2 className="w-10 h-10 text-primary" />
+                  </div>
+                </div>
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
+                    <Wand2 className="w-4 h-4 text-primary" />
+                    Génération d'images IA
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Créez des visuels uniques pour vos shorts à partir de descriptions textuelles. 6 styles artistiques disponibles.
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Image Editing */}
+              <Card className="glass-hover border-border/50 overflow-hidden group cursor-pointer hover:border-primary/50 transition-all">
+                <div className="aspect-video bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMCAyMGgyME0yMCAwdjIwIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==')] opacity-30" />
+                  <div className="relative z-10 bg-accent/20 backdrop-blur-sm p-4 rounded-2xl group-hover:scale-110 transition-transform">
+                    <Pencil className="w-10 h-10 text-accent" />
+                  </div>
+                </div>
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
+                    <Pencil className="w-4 h-4 text-accent" />
+                    Édition d'images IA
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Modifiez vos images avec des instructions en langage naturel. Changez les couleurs, le style, l'ambiance.
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Image to Video */}
+              <Card className="glass-hover border-border/50 overflow-hidden group cursor-pointer hover:border-primary/50 transition-all">
+                <div className="aspect-video bg-gradient-to-br from-green-500/20 to-primary/20 flex items-center justify-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMCAyMGgyME0yMCAwdjIwIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==')] opacity-30" />
+                  <div className="relative z-10 bg-green-500/20 backdrop-blur-sm p-4 rounded-2xl group-hover:scale-110 transition-transform">
+                    <Play className="w-10 h-10 text-green-500" />
+                  </div>
+                </div>
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
+                    <Play className="w-4 h-4 text-green-500" />
+                    Image → Vidéo animée
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Transformez vos images statiques en vidéos animées avec des effets de zoom, panoramique et Ken Burns.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           </div>
           
