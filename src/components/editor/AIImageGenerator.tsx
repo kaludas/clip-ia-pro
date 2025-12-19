@@ -2,12 +2,13 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Wand2, Download, Plus, Loader2, ChevronLeft, Sparkles, Image as ImageIcon, Upload, Pencil, Video, Play } from 'lucide-react';
+import { Wand2, Download, Plus, Loader2, ChevronLeft, Sparkles, Image as ImageIcon, Upload, Pencil, Video, Play, Save, FolderOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
+import { useAuth } from '@/hooks/useAuth';
+import ImageLibrary from './ImageLibrary';
 interface AIImageGeneratorProps {
   onImageGenerated?: (imageUrl: string) => void;
   onBack?: () => void;
@@ -36,19 +37,20 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
   onBack
 }) => {
   const { language } = useLanguage();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Generate tab state
   const [prompt, setPrompt] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('realistic');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<{ url: string; prompt: string }[]>([]);
+  const [generatedImages, setGeneratedImages] = useState<{ url: string; prompt: string; saved?: boolean }[]>([]);
   
   // Edit tab state
   const [editPrompt, setEditPrompt] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedImages, setEditedImages] = useState<{ original: string; edited: string; prompt: string }[]>([]);
+  const [editedImages, setEditedImages] = useState<{ original: string; edited: string; prompt: string; saved?: boolean }[]>([]);
   
   // Image to video state
   const [videoSourceImage, setVideoSourceImage] = useState<string | null>(null);
@@ -56,6 +58,9 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
   const [videoDuration, setVideoDuration] = useState(3);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [generatedVideos, setGeneratedVideos] = useState<{ thumbnail: string; style: string }[]>([]);
+  
+  // Library state
+  const [showLibrary, setShowLibrary] = useState(false);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -180,6 +185,37 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
     }
   };
 
+  const handleSaveToLibrary = async (imageUrl: string, promptText: string, imageType: 'generated' | 'edited', index: number) => {
+    if (!user) {
+      toast.error('Connectez-vous pour sauvegarder des images');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('user_generated_images').insert({
+        user_id: user.id,
+        image_url: imageUrl,
+        prompt: promptText,
+        style: selectedStyle,
+        image_type: imageType
+      });
+
+      if (error) throw error;
+
+      // Mark as saved
+      if (imageType === 'generated') {
+        setGeneratedImages(prev => prev.map((img, i) => i === index ? { ...img, saved: true } : img));
+      } else {
+        setEditedImages(prev => prev.map((img, i) => i === index ? { ...img, saved: true } : img));
+      }
+
+      toast.success('Image sauvegardée dans votre bibliothèque');
+    } catch (error) {
+      console.error('Error saving image:', error);
+      toast.error('Erreur lors de la sauvegarde');
+    }
+  };
+
   const selectGeneratedForEdit = (url: string) => {
     setSelectedImage(url);
     toast.success('Image sélectionnée pour édition');
@@ -188,6 +224,12 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
   const selectForVideo = (url: string) => {
     setVideoSourceImage(url);
     toast.success('Image sélectionnée pour animation');
+  };
+
+  const handleSelectFromLibrary = (imageUrl: string) => {
+    setSelectedImage(imageUrl);
+    setShowLibrary(false);
+    toast.success('Image sélectionnée depuis la bibliothèque');
   };
 
   return (
@@ -271,6 +313,24 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
             </CardContent>
           </Card>
 
+          {/* Library button */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowLibrary(!showLibrary)}
+            className="w-full"
+          >
+            <FolderOpen className="h-4 w-4 mr-2" />
+            Ma Bibliothèque
+          </Button>
+
+          {showLibrary && (
+            <ImageLibrary 
+              onSelectImage={handleSelectFromLibrary}
+              onClose={() => setShowLibrary(false)}
+            />
+          )}
+
           {/* Generated Images Gallery */}
           {generatedImages.length > 0 && (
             <div className="grid grid-cols-2 gap-2">
@@ -279,6 +339,11 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
                   key={index} 
                   className="relative group rounded-lg overflow-hidden border border-border/50 bg-background/30"
                 >
+                  {img.saved && (
+                    <div className="absolute top-2 left-2 z-10 bg-green-500/80 text-white px-1.5 py-0.5 rounded text-[10px]">
+                      ✓ Sauvé
+                    </div>
+                  )}
                   <img 
                     src={img.url} 
                     alt={img.prompt}
@@ -288,6 +353,11 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
                     <Button size="sm" variant="secondary" onClick={() => handleAddToLayer(img.url)} className="text-xs w-full">
                       <Plus className="h-3 w-3 mr-1" /> Calque
                     </Button>
+                    {!img.saved && user && (
+                      <Button size="sm" variant="default" onClick={() => handleSaveToLibrary(img.url, img.prompt, 'generated', index)} className="text-xs w-full">
+                        <Save className="h-3 w-3 mr-1" /> Sauvegarder
+                      </Button>
+                    )}
                     <Button size="sm" variant="outline" onClick={() => selectGeneratedForEdit(img.url)} className="text-xs w-full">
                       <Pencil className="h-3 w-3 mr-1" /> Éditer
                     </Button>
@@ -391,6 +461,11 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
                     key={index} 
                     className="relative group rounded-lg overflow-hidden border border-border/50"
                   >
+                    {edit.saved && (
+                      <div className="absolute top-2 left-2 z-10 bg-green-500/80 text-white px-1.5 py-0.5 rounded text-[10px]">
+                        ✓ Sauvé
+                      </div>
+                    )}
                     <img 
                       src={edit.edited} 
                       alt={edit.prompt}
@@ -401,6 +476,11 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
                       <Button size="sm" variant="secondary" onClick={() => handleAddToLayer(edit.edited)} className="text-xs">
                         <Plus className="h-3 w-3 mr-1" /> Calque
                       </Button>
+                      {!edit.saved && user && (
+                        <Button size="sm" variant="default" onClick={() => handleSaveToLibrary(edit.edited, edit.prompt, 'edited', index)} className="text-xs">
+                          <Save className="h-3 w-3 mr-1" /> Sauvegarder
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
